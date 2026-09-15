@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+body {
+  font-family: 'Noto Sans JP', 'Poppins', sans-serif;
+  user-select: none;
+}
+
+.font-mono-code {
+  font-family: 'Fira Code', monospace;
+}
+
+/* Custom key styles */
+.key {
+  transition: all 0.08s ease;
+  box-shadow: 0 4px 0 #1e293b;
+}
+
+.key-active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #1e293b !important;
+  background-color: #38bdf8 !important;
+  color: #0f172a !important;
+}
+
+.key-target {
+  animation: pulse-key 1.2s infinite alternate;
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #38bdf8 !important;
+}
+
+@keyframes pulse-key {
+  0% {
+    box-shadow: 0 4px 0 #0369a1, 0 0 10px rgba(56, 189, 248, 0.4);
+  }
+  100% {
+    box-shadow: 0 4px 0 #0369a1, 0 0 20px rgba(56, 189, 248, 0.8);
+  }
+}
+
+.shake {
+  animation: shake 0.25s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes shake {
+  10%, 90% {
+    transform: translate3d(-2px, 0, 0);
+  }
+  20%, 80% {
+    transform: translate3d(4px, 0, 0);
+  }
+  30%, 50%, 70% {
+    transform: translate3d(-6px, 0, 0);
+  }
+  40%, 60% {
+    transform: translate3d(6px, 0, 0);
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
