@@ -6,6 +6,7 @@ import { DEFAULT_CUSTOM, INITIAL_DATASETS } from './data/sentences';
 import { ParticleCanvas, ParticleCanvasHandle } from './components/ParticleCanvas';
 import { VirtualKeyboard } from './components/VirtualKeyboard';
 import { AIModal, CustomModal, PauseModal, ResultModal } from './components/Modals';
+import appIcon from './assets/images/app_icon_1789649913266.jpg';
 
 export default function App() {
   // Audio state
@@ -473,8 +474,13 @@ export default function App() {
       <header className="relative z-10 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-4 py-3 sm:px-8">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-cyan-500/20">
-              <i className="fa-solid fa-keyboard"></i>
+            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-cyan-500/20 border border-cyan-500/30 flex items-center justify-center bg-slate-900 flex-shrink-0">
+              <img
+                src={appIcon}
+                alt="TypeMaster Pro Icon"
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
             </div>
             <div>
               <h1 className="text-xl font-black tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
@@ -817,7 +823,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-slate-800/60 py-4 text-center text-xs text-slate-500">
-        TypeMaster Pro &copy; 2026 - 全てのキーボード練習に対応
+        &copy;hp17 - TypeMaster Pro
       </footer>
 
       {/* Modals */}
