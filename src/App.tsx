@@ -411,6 +411,18 @@ export default function App() {
     [endGame, nextWord]
   );
 
+  // Dynamic Favicon setup
+  useEffect(() => {
+    let iconLink = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
+    if (!iconLink) {
+      iconLink = document.createElement('link');
+      iconLink.rel = 'icon';
+      document.head.appendChild(iconLink);
+    }
+    iconLink.type = 'image/png';
+    iconLink.href = '/favicon.png';
+  }, []);
+
   // Global Keydown Handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
