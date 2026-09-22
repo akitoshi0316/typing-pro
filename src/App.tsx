@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { CategoryKey, DisplayParts, ResultStats, WordItem } from './types';
+import { CategoryKey, DisplayParts, ResultStats, ThemeMode, WordItem } from './types';
 import { soundEngine } from './utils/soundEngine';
 import { KanaRomajiEngine } from './utils/kanaEngine';
 import { DEFAULT_CUSTOM, INITIAL_DATASETS } from './data/sentences';
@@ -9,6 +9,19 @@ import { AIModal, CustomModal, PauseModal, ResultModal } from './components/Moda
 import appIcon from './assets/images/app_icon_1789649913266.jpg';
 
 export default function App() {
+  // Theme state (Dark / Light)
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    try {
+      const saved = localStorage.getItem('typemaster_theme');
+      if (saved === 'light' || saved === 'dark') {
+        return saved;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return 'dark';
+  });
+
   // Audio state
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
 
@@ -106,6 +119,36 @@ export default function App() {
     setSoundEnabled(next);
     soundEngine.enabled = next;
   };
+
+  // Toggle theme (Dark / Light)
+  const handleToggleTheme = () => {
+    setTheme((prev) => {
+      const next: ThemeMode = prev === 'dark' ? 'light' : 'dark';
+      try {
+        localStorage.setItem('typemaster_theme', next);
+      } catch (e) {
+        console.error(e);
+      }
+      return next;
+    });
+  };
+
+  // Sync theme with document and body
+  useEffect(() => {
+    if (theme === 'light') {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.body.className =
+        'bg-slate-100 text-slate-800 min-h-screen overflow-x-hidden selection:bg-cyan-500 selection:text-white transition-colors duration-200';
+    } else {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.body.className =
+        'bg-slate-950 text-slate-100 min-h-screen overflow-x-hidden selection:bg-cyan-500 selection:text-black transition-colors duration-200';
+    }
+  }, [theme]);
 
   // Get active dataset
   const getDataset = useCallback(
@@ -477,16 +520,37 @@ export default function App() {
   const currentAccuracy =
     totalInputs > 0 ? ((totalCorrectKeys / totalInputs) * 100).toFixed(1) : '100.0';
 
+  const isLight = theme === 'light';
+
   return (
-    <div className="relative min-h-screen flex flex-col justify-between overflow-x-hidden selection:bg-cyan-500 selection:text-black">
+    <div
+      id="appRoot"
+      className={`relative min-h-screen flex flex-col justify-between overflow-x-hidden transition-colors duration-200 ${
+        isLight
+          ? 'selection:bg-cyan-500 selection:text-white'
+          : 'selection:bg-cyan-500 selection:text-black'
+      }`}
+    >
       {/* Particle Effect Canvas Background */}
-      <ParticleCanvas ref={particleCanvasRef} />
+      <ParticleCanvas ref={particleCanvasRef} theme={theme} />
 
       {/* Top Navigation Header */}
-      <header className="relative z-10 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-4 py-3 sm:px-8">
+      <header
+        className={`relative z-10 border-b backdrop-blur-md px-4 py-3 sm:px-8 transition-colors duration-200 ${
+          isLight
+            ? 'border-slate-200/90 bg-white/80 shadow-xs'
+            : 'border-slate-800/80 bg-slate-900/60'
+        }`}
+      >
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-cyan-500/20 border border-cyan-500/30 flex items-center justify-center bg-slate-900 flex-shrink-0">
+            <div
+              className={`w-10 h-10 rounded-xl overflow-hidden shadow-lg border flex items-center justify-center flex-shrink-0 ${
+                isLight
+                  ? 'shadow-slate-300/50 border-cyan-500/40 bg-white'
+                  : 'shadow-cyan-500/20 border-cyan-500/30 bg-slate-900'
+              }`}
+            >
               <img
                 src={appIcon}
                 alt="TypeMaster Pro Icon"
@@ -495,50 +559,95 @@ export default function App() {
               />
             </div>
             <div>
-              <h1 className="text-xl font-black tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
-                TypeMaster <span className="text-cyan-400 font-light text-sm">PRO</span>
+              <h1
+                id="appTitle"
+                className={`text-xl font-black tracking-tight ${
+                  isLight
+                    ? 'bg-gradient-to-r from-slate-900 via-slate-700 to-cyan-600 bg-clip-text text-transparent'
+                    : 'bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent'
+                }`}
+              >
+                TypeMaster <span className="text-cyan-500 font-light text-sm">PRO</span>
               </h1>
-              <p className="text-xs text-slate-400 hidden sm:block">
+              <p className={`text-xs hidden sm:block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                 タイピング速度 & 精度向上トレーニング
               </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             <button
               id="btnOpenCustomModal"
               onClick={() => setCustomModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs sm:text-sm font-medium transition flex items-center space-x-2 shadow-sm hover:border-cyan-500/50 cursor-pointer"
+              className={`px-3 py-2 rounded-xl border text-xs sm:text-sm font-medium transition flex items-center space-x-1.5 cursor-pointer ${
+                isLight
+                  ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 shadow-xs hover:border-cyan-400'
+                  : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200 shadow-sm hover:border-cyan-500/50'
+              }`}
             >
-              <i className="fa-solid fa-pen-to-square text-cyan-400"></i>
-              <span>文章を編集</span>
+              <i className="fa-solid fa-pen-to-square text-cyan-500"></i>
+              <span className="hidden sm:inline">文章を編集</span>
             </button>
 
             <button
               id="btnPause"
               onClick={togglePause}
-              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs sm:text-sm font-medium transition flex items-center space-x-2 cursor-pointer"
+              className={`px-3 py-2 rounded-xl border text-xs sm:text-sm font-medium transition flex items-center space-x-1.5 cursor-pointer ${
+                isLight
+                  ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 shadow-xs hover:border-amber-400'
+                  : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200 shadow-sm hover:border-amber-500/50'
+              }`}
             >
-              <i className="fa-solid fa-pause text-amber-400"></i>
-              <span className="hidden sm:inline">一時停止 (Esc)</span>
+              <i className="fa-solid fa-pause text-amber-500"></i>
+              <span className="hidden md:inline">一時停止 (Esc)</span>
             </button>
 
             <button
               id="btnToggleSound"
               onClick={handleToggleSound}
-              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs sm:text-sm font-medium transition flex items-center space-x-2 cursor-pointer"
+              className={`px-3 py-2 rounded-xl border text-xs sm:text-sm font-medium transition flex items-center space-x-1.5 cursor-pointer ${
+                isLight
+                  ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 shadow-xs hover:border-cyan-400'
+                  : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200 shadow-sm hover:border-cyan-500/50'
+              }`}
             >
               <i
                 id="soundIcon"
                 className={
                   soundEnabled
-                    ? 'fa-solid fa-volume-high text-cyan-400'
+                    ? 'fa-solid fa-volume-high text-cyan-500'
+                    : isLight
+                    ? 'fa-solid fa-volume-xmark text-slate-400'
                     : 'fa-solid fa-volume-xmark text-slate-500'
                 }
               ></i>
               <span id="soundLabel" className="hidden sm:inline">
-                {soundEnabled ? 'サウンド: ON' : 'サウンド: OFF'}
+                {soundEnabled ? 'ON' : 'OFF'}
               </span>
+            </button>
+
+            {/* Light / Dark Mode Toggle Button */}
+            <button
+              id="btnToggleTheme"
+              onClick={handleToggleTheme}
+              className={`px-3 py-2 rounded-xl border text-xs sm:text-sm font-medium transition flex items-center space-x-1.5 cursor-pointer ${
+                isLight
+                  ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 shadow-xs hover:border-amber-400'
+                  : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200 shadow-sm hover:border-cyan-500/50'
+              }`}
+              title={isLight ? 'ダークモードに切り替え' : 'ライトモードに切り替え'}
+            >
+              {isLight ? (
+                <>
+                  <i className="fa-solid fa-sun text-amber-500"></i>
+                  <span className="hidden sm:inline">ライト</span>
+                </>
+              ) : (
+                <>
+                  <i className="fa-solid fa-moon text-cyan-400"></i>
+                  <span className="hidden sm:inline">ダーク</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -547,10 +656,20 @@ export default function App() {
       {/* Main Container */}
       <main className="relative z-10 flex-grow max-w-5xl w-full mx-auto px-4 py-6 flex flex-col justify-center items-center space-y-6">
         {/* Control Bar: Category & Timer selection */}
-        <div className="w-full bg-slate-900/80 border border-slate-800 p-3 sm:p-4 rounded-2xl backdrop-blur-md shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+        <div
+          className={`w-full border p-3 sm:p-4 rounded-2xl backdrop-blur-md transition-colors duration-200 flex flex-col md:flex-row items-center justify-between gap-4 ${
+            isLight
+              ? 'bg-white/85 border-slate-200/90 shadow-md'
+              : 'bg-slate-900/80 border-slate-800 shadow-xl'
+          }`}
+        >
           {/* Category buttons */}
           <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 w-full md:w-auto">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-1 hidden sm:inline">
+            <span
+              className={`text-xs font-semibold uppercase tracking-wider mr-1 hidden sm:inline ${
+                isLight ? 'text-slate-500' : 'text-slate-400'
+              }`}
+            >
               カテゴリ:
             </span>
             <button
@@ -558,7 +677,11 @@ export default function App() {
               onClick={() => handleSelectCategory('japanese')}
               className={`cat-btn py-2 px-3.5 rounded-xl border text-xs sm:text-sm font-medium flex items-center space-x-1.5 transition cursor-pointer ${
                 category === 'japanese'
-                  ? 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                  ? isLight
+                    ? 'border-cyan-500 bg-cyan-50 text-cyan-700 shadow-xs font-semibold'
+                    : 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                  : isLight
+                  ? 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   : 'border-slate-800 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
               }`}
             >
@@ -570,7 +693,11 @@ export default function App() {
               onClick={() => handleSelectCategory('english')}
               className={`cat-btn py-2 px-3.5 rounded-xl border text-xs sm:text-sm font-medium flex items-center space-x-1.5 transition cursor-pointer ${
                 category === 'english'
-                  ? 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                  ? isLight
+                    ? 'border-cyan-500 bg-cyan-50 text-cyan-700 shadow-xs font-semibold'
+                    : 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                  : isLight
+                  ? 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   : 'border-slate-800 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
               }`}
             >
@@ -582,7 +709,11 @@ export default function App() {
               onClick={() => handleSelectCategory('programming')}
               className={`cat-btn py-2 px-3.5 rounded-xl border text-xs sm:text-sm font-medium flex items-center space-x-1.5 transition cursor-pointer ${
                 category === 'programming'
-                  ? 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                  ? isLight
+                    ? 'border-cyan-500 bg-cyan-50 text-cyan-700 shadow-xs font-semibold'
+                    : 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                  : isLight
+                  ? 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   : 'border-slate-800 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
               }`}
             >
@@ -594,7 +725,11 @@ export default function App() {
               onClick={() => handleSelectCategory('custom')}
               className={`cat-btn py-2 px-3.5 rounded-xl border text-xs sm:text-sm font-medium flex items-center space-x-1.5 transition cursor-pointer ${
                 category === 'custom'
-                  ? 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                  ? isLight
+                    ? 'border-cyan-500 bg-cyan-50 text-cyan-700 shadow-xs font-semibold'
+                    : 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                  : isLight
+                  ? 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   : 'border-slate-800 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
               }`}
             >
@@ -605,7 +740,11 @@ export default function App() {
 
           {/* Time Limit buttons */}
           <div className="flex items-center justify-center space-x-1.5 sm:space-x-2 w-full md:w-auto flex-wrap gap-y-1.5">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-1 hidden sm:inline">
+            <span
+              className={`text-xs font-semibold uppercase tracking-wider mr-1 hidden sm:inline ${
+                isLight ? 'text-slate-500' : 'text-slate-400'
+              }`}
+            >
               時間制限:
             </span>
             <button
@@ -613,7 +752,11 @@ export default function App() {
               onClick={() => handleSelectTimeLimit(15)}
               className={`time-btn py-1.5 px-3 rounded-xl border text-xs sm:text-sm font-medium transition cursor-pointer ${
                 timeLimit === 15 && !customTimeInput
-                  ? 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                  ? isLight
+                    ? 'border-cyan-500 bg-cyan-50 text-cyan-700 shadow-xs font-semibold'
+                    : 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                  : isLight
+                  ? 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   : 'border-slate-800 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
               }`}
             >
@@ -624,7 +767,11 @@ export default function App() {
               onClick={() => handleSelectTimeLimit(30)}
               className={`time-btn py-1.5 px-3 rounded-xl border text-xs sm:text-sm font-medium transition cursor-pointer ${
                 timeLimit === 30 && !customTimeInput
-                  ? 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                  ? isLight
+                    ? 'border-cyan-500 bg-cyan-50 text-cyan-700 shadow-xs font-semibold'
+                    : 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                  : isLight
+                  ? 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   : 'border-slate-800 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
               }`}
             >
@@ -635,7 +782,11 @@ export default function App() {
               onClick={() => handleSelectTimeLimit(60)}
               className={`time-btn py-1.5 px-3 rounded-xl border text-xs sm:text-sm font-medium transition cursor-pointer ${
                 timeLimit === 60 && !customTimeInput
-                  ? 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                  ? isLight
+                    ? 'border-cyan-500 bg-cyan-50 text-cyan-700 shadow-xs font-semibold'
+                    : 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                  : isLight
+                  ? 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   : 'border-slate-800 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
               }`}
             >
@@ -646,7 +797,11 @@ export default function App() {
               onClick={() => handleSelectTimeLimit(0)}
               className={`time-btn py-1.5 px-3 rounded-xl border text-xs sm:text-sm font-medium transition cursor-pointer ${
                 timeLimit === 0 && !customTimeInput
-                  ? 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                  ? isLight
+                    ? 'border-cyan-500 bg-cyan-50 text-cyan-700 shadow-xs font-semibold'
+                    : 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                  : isLight
+                  ? 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   : 'border-slate-800 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
               }`}
             >
@@ -654,7 +809,13 @@ export default function App() {
             </button>
 
             {/* Custom Time Input */}
-            <div className="flex items-center space-x-1 border border-slate-800 bg-slate-800/50 rounded-xl px-1.5 py-0.5">
+            <div
+              className={`flex items-center space-x-1 border rounded-xl px-1.5 py-0.5 transition ${
+                isLight
+                  ? 'border-slate-200 bg-white shadow-xs'
+                  : 'border-slate-800 bg-slate-800/50'
+              }`}
+            >
               <input
                 id="customTimeInput"
                 type="number"
@@ -664,15 +825,21 @@ export default function App() {
                 placeholder="カスタム"
                 value={customTimeInput}
                 onChange={(e) => handleCustomTimeChange(e.target.value)}
-                className="w-16 bg-slate-950 border border-slate-700/80 rounded-lg px-1.5 py-1 text-xs font-mono-code text-center text-cyan-300 focus:outline-none focus:border-cyan-500 font-bold placeholder:text-slate-500 placeholder:font-normal"
+                className={`w-16 rounded-lg px-1.5 py-1 text-xs font-mono-code text-center font-bold focus:outline-none transition ${
+                  isLight
+                    ? 'bg-slate-50 border border-slate-200 text-cyan-700 focus:border-cyan-500 placeholder:text-slate-400 placeholder:font-normal'
+                    : 'bg-slate-950 border border-slate-700/80 text-cyan-300 focus:border-cyan-500 placeholder:text-slate-500 placeholder:font-normal'
+                }`}
               />
-              <span className="text-xs text-slate-400 font-medium pr-1">秒</span>
+              <span className={`text-xs font-medium pr-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                秒
+              </span>
             </div>
           </div>
 
           {/* Challenge Mode: Miss Limit */}
           <div className="flex items-center justify-center space-x-1.5 sm:space-x-2 w-full md:w-auto flex-wrap gap-y-1.5">
-            <span className="text-xs font-semibold text-rose-400 uppercase tracking-wider mr-1 flex items-center space-x-1">
+            <span className="text-xs font-semibold text-rose-500 uppercase tracking-wider mr-1 flex items-center space-x-1">
               <i className="fa-solid fa-skull"></i>
               <span>チャレンジ:</span>
             </span>
@@ -680,11 +847,17 @@ export default function App() {
               id="missLimitBox"
               className={`flex items-center space-x-1 border rounded-xl px-1.5 py-0.5 transition ${
                 missLimit > 0
-                  ? 'border-rose-500/50 bg-rose-950/40'
+                  ? isLight
+                    ? 'border-rose-300 bg-rose-50 text-rose-700 shadow-xs'
+                    : 'border-rose-500/50 bg-rose-950/40'
+                  : isLight
+                  ? 'border-slate-200 bg-white shadow-xs'
                   : 'border-slate-800 bg-slate-800/50'
               }`}
             >
-              <span className="text-xs text-slate-400 font-medium pl-1">ミスタイプ</span>
+              <span className={`text-xs font-medium pl-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                ミスタイプ
+              </span>
               <input
                 id="missLimitInput"
                 type="number"
@@ -694,53 +867,109 @@ export default function App() {
                 placeholder="OFF"
                 value={missLimitInput}
                 onChange={(e) => handleMissLimitChange(e.target.value)}
-                className="w-14 bg-slate-950 border border-slate-700/80 rounded-lg px-1.5 py-1 text-xs font-mono-code text-center text-rose-300 focus:outline-none focus:border-rose-500 font-bold placeholder:text-slate-500 placeholder:font-normal"
+                className={`w-14 rounded-lg px-1.5 py-1 text-xs font-mono-code text-center font-bold focus:outline-none transition ${
+                  isLight
+                    ? 'bg-slate-50 border border-slate-200 text-rose-600 focus:border-rose-500 placeholder:text-slate-400 placeholder:font-normal'
+                    : 'bg-slate-950 border border-slate-700/80 text-rose-300 focus:border-rose-500 placeholder:text-slate-500 placeholder:font-normal'
+                }`}
               />
-              <span className="text-xs text-slate-400 font-medium pr-1">回</span>
+              <span className={`text-xs font-medium pr-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                回
+              </span>
             </div>
           </div>
         </div>
 
         {/* Real-time Metrics Header */}
         <div className="grid grid-cols-4 gap-2 sm:gap-4 w-full">
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 text-center backdrop-blur-md">
-            <div className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase">
+          <div
+            className={`border rounded-2xl p-3 text-center backdrop-blur-md transition-colors duration-200 ${
+              isLight
+                ? 'bg-white/85 border-slate-200 shadow-xs'
+                : 'bg-slate-900/80 border-slate-800'
+            }`}
+          >
+            <div
+              className={`text-[10px] sm:text-xs font-bold uppercase ${
+                isLight ? 'text-slate-500' : 'text-slate-400'
+              }`}
+            >
               速度 (CPM)
             </div>
             <div
               id="statCPM"
-              className="text-xl sm:text-3xl font-black text-cyan-400 mt-1 font-mono-code"
+              className={`text-xl sm:text-3xl font-black mt-1 font-mono-code ${
+                isLight ? 'text-cyan-600' : 'text-cyan-400'
+              }`}
             >
               {currentCPM}
             </div>
           </div>
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 text-center backdrop-blur-md">
-            <div className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase">
+          <div
+            className={`border rounded-2xl p-3 text-center backdrop-blur-md transition-colors duration-200 ${
+              isLight
+                ? 'bg-white/85 border-slate-200 shadow-xs'
+                : 'bg-slate-900/80 border-slate-800'
+            }`}
+          >
+            <div
+              className={`text-[10px] sm:text-xs font-bold uppercase ${
+                isLight ? 'text-slate-500' : 'text-slate-400'
+              }`}
+            >
               正確率
             </div>
-            <div className="text-xl sm:text-3xl font-black text-emerald-400 mt-1 font-mono-code">
+            <div
+              className={`text-xl sm:text-3xl font-black mt-1 font-mono-code ${
+                isLight ? 'text-emerald-600' : 'text-emerald-400'
+              }`}
+            >
               <span id="statAccuracy">{currentAccuracy}</span>
               <span className="text-sm font-normal">%</span>
             </div>
           </div>
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 text-center backdrop-blur-md">
-            <div className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase">
+          <div
+            className={`border rounded-2xl p-3 text-center backdrop-blur-md transition-colors duration-200 ${
+              isLight
+                ? 'bg-white/85 border-slate-200 shadow-xs'
+                : 'bg-slate-900/80 border-slate-800'
+            }`}
+          >
+            <div
+              className={`text-[10px] sm:text-xs font-bold uppercase ${
+                isLight ? 'text-slate-500' : 'text-slate-400'
+              }`}
+            >
               コンボ
             </div>
             <div
               id="statCombo"
-              className="text-xl sm:text-3xl font-black text-amber-400 mt-1 font-mono-code"
+              className={`text-xl sm:text-3xl font-black mt-1 font-mono-code ${
+                isLight ? 'text-amber-500' : 'text-amber-400'
+              }`}
             >
               {currentCombo}
             </div>
           </div>
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 text-center backdrop-blur-md">
-            <div className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase">
+          <div
+            className={`border rounded-2xl p-3 text-center backdrop-blur-md transition-colors duration-200 ${
+              isLight
+                ? 'bg-white/85 border-slate-200 shadow-xs'
+                : 'bg-slate-900/80 border-slate-800'
+            }`}
+          >
+            <div
+              className={`text-[10px] sm:text-xs font-bold uppercase ${
+                isLight ? 'text-slate-500' : 'text-slate-400'
+              }`}
+            >
               残り時間
             </div>
             <div
               id="statTimer"
-              className="text-xl sm:text-3xl font-black text-purple-400 mt-1 font-mono-code"
+              className={`text-xl sm:text-3xl font-black mt-1 font-mono-code ${
+                isLight ? 'text-purple-600' : 'text-purple-400'
+              }`}
             >
               {timeLimit > 0 ? Math.max(0, timeRemaining).toFixed(1) : '∞'}
             </div>
@@ -751,12 +980,18 @@ export default function App() {
         <div
           id="typingArea"
           ref={typingAreaRef}
-          className={`relative w-full bg-slate-900/90 border-2 border-slate-800 rounded-3xl p-6 sm:p-10 text-center shadow-2xl backdrop-blur-xl transition-all min-h-[220px] flex flex-col justify-center items-center overflow-hidden ${
-            isShaking ? 'shake' : ''
-          }`}
+          className={`relative w-full border-2 rounded-3xl p-6 sm:p-10 text-center backdrop-blur-xl transition-all min-h-[220px] flex flex-col justify-center items-center overflow-hidden ${
+            isLight
+              ? 'bg-white/95 border-slate-200 shadow-xl'
+              : 'bg-slate-900/90 border-slate-800 shadow-2xl'
+          } ${isShaking ? 'shake' : ''}`}
         >
           {/* Progress Bar */}
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-slate-800">
+          <div
+            className={`absolute top-0 left-0 w-full h-1.5 ${
+              isLight ? 'bg-slate-200' : 'bg-slate-800'
+            }`}
+          >
             <div
               id="progressBar"
               className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-150"
@@ -768,7 +1003,9 @@ export default function App() {
           {!isPlaying && (
             <div
               id="startOverlay"
-              className="absolute inset-0 bg-slate-950/85 backdrop-blur-md z-20 flex flex-col items-center justify-center transition-opacity duration-300"
+              className={`absolute inset-0 z-20 flex flex-col items-center justify-center transition-opacity duration-300 backdrop-blur-md ${
+                isLight ? 'bg-white/80' : 'bg-slate-950/85'
+              }`}
             >
               <button
                 id="btnStartGame"
@@ -778,7 +1015,11 @@ export default function App() {
                 <i className="fa-solid fa-play"></i>
                 <span>スタート (SPACEキー)</span>
               </button>
-              <p className="text-xs text-slate-400 mt-4">
+              <p
+                className={`text-xs mt-4 ${
+                  isLight ? 'text-slate-600' : 'text-slate-400'
+                }`}
+              >
                 またはキーボードの [ Space ] を押して開始
               </p>
             </div>
@@ -787,14 +1028,18 @@ export default function App() {
           {/* Sentence Display */}
           <div
             id="displayMain"
-            className="text-2xl sm:text-4xl font-extrabold text-white tracking-wide mb-2"
+            className={`text-2xl sm:text-4xl font-extrabold tracking-wide mb-2 ${
+              isLight ? 'text-slate-900' : 'text-white'
+            }`}
           >
             {currentWord.main}
           </div>
 
           <div
             id="displaySub"
-            className="text-sm sm:text-base text-cyan-400/80 font-medium mb-6"
+            className={`text-sm sm:text-base font-medium mb-6 ${
+              isLight ? 'text-cyan-700' : 'text-cyan-400/80'
+            }`}
           >
             {currentWord.sub}
           </div>
@@ -802,25 +1047,43 @@ export default function App() {
           {/* Romaji / Key Target Display */}
           <div
             id="displayRomaji"
-            className="text-xl sm:text-3xl font-mono-code tracking-wider text-slate-400 bg-slate-950/60 px-6 py-3 rounded-2xl border border-slate-800/80 max-w-full overflow-x-auto whitespace-nowrap"
+            className={`text-xl sm:text-3xl font-mono-code tracking-wider px-6 py-3 rounded-2xl border max-w-full overflow-x-auto whitespace-nowrap transition-colors ${
+              isLight
+                ? 'text-slate-500 bg-slate-100/90 border-slate-300/80 shadow-inner'
+                : 'text-slate-400 bg-slate-950/60 border-slate-800/80'
+            }`}
           >
             {displayParts.done && (
-              <span className="text-emerald-400 font-bold border-b-2 border-emerald-400">
+              <span className="text-emerald-500 font-bold border-b-2 border-emerald-500">
                 {displayParts.done}
               </span>
             )}
             {displayParts.activeBuffer && (
-              <span className="text-emerald-300 font-bold border-b-2 border-emerald-400">
+              <span
+                className={`font-bold border-b-2 ${
+                  isLight
+                    ? 'text-emerald-600 border-emerald-500'
+                    : 'text-emerald-300 border-emerald-400'
+                }`}
+              >
                 {displayParts.activeBuffer}
               </span>
             )}
             {displayParts.activeRemaining && (
-              <span className="text-cyan-300 font-bold bg-cyan-500/20 px-1 rounded animate-pulse border-b-2 border-cyan-400">
+              <span
+                className={`font-bold px-1 rounded animate-pulse border-b-2 ${
+                  isLight
+                    ? 'text-cyan-700 bg-cyan-100 border-cyan-500'
+                    : 'text-cyan-300 bg-cyan-500/20 border-cyan-400'
+                }`}
+              >
                 {displayParts.activeRemaining}
               </span>
             )}
             {displayParts.future && (
-              <span className="text-slate-500">{displayParts.future}</span>
+              <span className={isLight ? 'text-slate-400' : 'text-slate-500'}>
+                {displayParts.future}
+              </span>
             )}
           </div>
         </div>
@@ -830,11 +1093,16 @@ export default function App() {
           targetKey={targetKey}
           activeKey={activeKey}
           onKeyClick={(k) => processKey(k)}
+          theme={theme}
         />
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-slate-800/60 py-4 text-center text-xs text-slate-500">
+      <footer
+        className={`relative z-10 border-t py-4 text-center text-xs transition-colors duration-200 ${
+          isLight ? 'border-slate-200 text-slate-500' : 'border-slate-800/60 text-slate-500'
+        }`}
+      >
         &copy;hp17 - TypeMaster Pro
       </footer>
 
@@ -844,6 +1112,7 @@ export default function App() {
         onResume={togglePause}
         onRestart={startGame}
         onQuit={quitGame}
+        theme={theme}
       />
 
       <ResultModal
@@ -855,12 +1124,14 @@ export default function App() {
           setResultModalOpen(false);
           setAiModalOpen(true);
         }}
+        theme={theme}
       />
 
       <AIModal
         isOpen={aiModalOpen}
         stats={lastResultStats}
         onClose={() => setAiModalOpen(false)}
+        theme={theme}
       />
 
       <CustomModal
@@ -880,6 +1151,7 @@ export default function App() {
           setCustomModalOpen(false);
           setCategory('custom');
         }}
+        theme={theme}
       />
     </div>
   );

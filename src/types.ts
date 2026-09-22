@@ -5,6 +5,7 @@ export interface WordItem {
 }
 
 export type CategoryKey = 'japanese' | 'english' | 'programming' | 'custom';
+export type ThemeMode = 'dark' | 'light';
 
 export interface DisplayParts {
   done: string;

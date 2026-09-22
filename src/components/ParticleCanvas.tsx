@@ -4,6 +4,10 @@ export interface ParticleCanvasHandle {
   createExplosion: (x: number, y: number) => void;
 }
 
+interface ParticleCanvasProps {
+  theme?: 'dark' | 'light';
+}
+
 class Particle {
   x: number;
   y: number;
@@ -14,13 +18,16 @@ class Particle {
   alpha: number;
   decay: number;
 
-  constructor(x: number, y: number) {
+  constructor(x: number, y: number, theme: 'dark' | 'light' = 'dark') {
     this.x = x;
     this.y = y;
     this.vx = (Math.random() - 0.5) * 8;
     this.vy = (Math.random() - 0.5) * 8 - 2;
     this.radius = Math.random() * 4 + 2;
-    this.color = `hsl(${Math.random() * 60 + 170}, 100%, 60%)`;
+    this.color =
+      theme === 'light'
+        ? `hsl(${Math.random() * 50 + 180}, 85%, 42%)`
+        : `hsl(${Math.random() * 60 + 170}, 100%, 60%)`;
     this.alpha = 1;
     this.decay = Math.random() * 0.03 + 0.015;
   }
@@ -42,17 +49,20 @@ class Particle {
   }
 }
 
-export const ParticleCanvas = forwardRef<ParticleCanvasHandle>((_, ref) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const particlesRef = useRef<Particle[]>([]);
+export const ParticleCanvas = forwardRef<ParticleCanvasHandle, ParticleCanvasProps>(
+  ({ theme = 'dark' }, ref) => {
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const particlesRef = useRef<Particle[]>([]);
+    const themeRef = useRef(theme);
+    themeRef.current = theme;
 
-  useImperativeHandle(ref, () => ({
-    createExplosion(x: number, y: number) {
-      for (let i = 0; i < 24; i++) {
-        particlesRef.current.push(new Particle(x, y));
-      }
-    },
-  }));
+    useImperativeHandle(ref, () => ({
+      createExplosion(x: number, y: number) {
+        for (let i = 0; i < 24; i++) {
+          particlesRef.current.push(new Particle(x, y, themeRef.current));
+        }
+      },
+    }));
 
   useEffect(() => {
     const canvas = canvasRef.current;

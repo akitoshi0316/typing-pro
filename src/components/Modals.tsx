@@ -6,6 +6,7 @@ interface PauseModalProps {
   onResume: () => void;
   onRestart: () => void;
   onQuit: () => void;
+  theme?: 'dark' | 'light';
 }
 
 export const PauseModal: React.FC<PauseModalProps> = ({
@@ -13,8 +14,11 @@ export const PauseModal: React.FC<PauseModalProps> = ({
   onResume,
   onRestart,
   onQuit,
+  theme = 'dark',
 }) => {
   if (!isOpen) return null;
+
+  const isLight = theme === 'light';
 
   return (
     <div
@@ -23,13 +27,17 @@ export const PauseModal: React.FC<PauseModalProps> = ({
     >
       <div
         id="pauseCard"
-        className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 sm:p-8 text-center shadow-2xl transition-transform duration-300"
+        className={`w-full max-w-md rounded-3xl p-6 sm:p-8 text-center shadow-2xl transition-transform duration-300 border ${
+          isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-100'
+        }`}
       >
-        <div className="w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 mx-auto flex items-center justify-center text-2xl shadow-lg mb-4">
+        <div className="w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-500 border border-amber-500/40 mx-auto flex items-center justify-center text-2xl shadow-lg mb-4">
           <i className="fa-solid fa-pause"></i>
         </div>
-        <h2 className="text-2xl font-black text-slate-100 mb-1">一時停止中</h2>
-        <p className="text-xs text-slate-400 mb-6">
+        <h2 className={`text-2xl font-black mb-1 ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+          一時停止中
+        </h2>
+        <p className={`text-xs mb-6 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
           [ Esc ] キーまたは下のボタンで再開できます
         </p>
 
@@ -45,7 +53,11 @@ export const PauseModal: React.FC<PauseModalProps> = ({
           <button
             id="btnRestart"
             onClick={onRestart}
-            className="w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold transition border border-slate-700 flex items-center justify-center space-x-2 cursor-pointer"
+            className={`w-full py-3 rounded-2xl font-bold transition border flex items-center justify-center space-x-2 cursor-pointer ${
+              isLight
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+            }`}
           >
             <i className="fa-solid fa-rotate-right"></i>
             <span>最初からやり直す</span>
@@ -53,7 +65,11 @@ export const PauseModal: React.FC<PauseModalProps> = ({
           <button
             id="btnQuit"
             onClick={onQuit}
-            className="w-full py-3 rounded-2xl bg-slate-800/50 hover:bg-rose-950/50 text-rose-400 font-bold transition border border-slate-800 hover:border-rose-800/50 flex items-center justify-center space-x-2 cursor-pointer"
+            className={`w-full py-3 rounded-2xl font-bold transition border flex items-center justify-center space-x-2 cursor-pointer ${
+              isLight
+                ? 'bg-rose-50 hover:bg-rose-100 text-rose-600 border-rose-200'
+                : 'bg-slate-800/50 hover:bg-rose-950/50 text-rose-400 border-slate-800 hover:border-rose-800/50'
+            }`}
           >
             <i className="fa-solid fa-xmark"></i>
             <span>終了してメニューに戻る</span>
@@ -70,6 +86,7 @@ interface ResultModalProps {
   onRetry: () => void;
   onClose: () => void;
   onOpenAI: () => void;
+  theme?: 'dark' | 'light';
 }
 
 export const ResultModal: React.FC<ResultModalProps> = ({
@@ -78,8 +95,11 @@ export const ResultModal: React.FC<ResultModalProps> = ({
   onRetry,
   onClose,
   onOpenAI,
+  theme = 'dark',
 }) => {
   if (!isOpen || !stats) return null;
+
+  const isLight = theme === 'light';
 
   return (
     <div
@@ -88,7 +108,9 @@ export const ResultModal: React.FC<ResultModalProps> = ({
     >
       <div
         id="resultCard"
-        className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-6 sm:p-8 text-center shadow-2xl transition-transform duration-300"
+        className={`w-full max-w-lg rounded-3xl p-6 sm:p-8 text-center shadow-2xl transition-transform duration-300 border ${
+          isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-100'
+        }`}
       >
         <div
           id="rankBadge"
@@ -96,74 +118,74 @@ export const ResultModal: React.FC<ResultModalProps> = ({
         >
           {stats.rank}
         </div>
-        <h2 id="rankTitle" className="text-xl font-bold text-slate-200">
+        <h2 id="rankTitle" className={`text-xl font-bold ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
           {stats.rankTitle}
         </h2>
-        <p className="text-xs text-slate-400 mb-6">トレーニング結果</p>
+        <p className={`text-xs mb-6 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>トレーニング結果</p>
 
         <div className="grid grid-cols-2 gap-3 mb-6 text-left">
-          <div className="bg-slate-950/60 p-3 rounded-2xl border border-slate-800">
-            <div className="text-[10px] text-slate-400 uppercase font-semibold">
+          <div className={`p-3 rounded-2xl border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'}`}>
+            <div className="text-[10px] text-slate-500 uppercase font-semibold">
               総合スコア
             </div>
             <div
               id="resScore"
-              className="text-2xl font-black text-cyan-400 font-mono-code"
+              className="text-2xl font-black text-cyan-600 font-mono-code"
             >
               {stats.score}
             </div>
           </div>
-          <div className="bg-slate-950/60 p-3 rounded-2xl border border-slate-800">
-            <div className="text-[10px] text-slate-400 uppercase font-semibold">
+          <div className={`p-3 rounded-2xl border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'}`}>
+            <div className="text-[10px] text-slate-500 uppercase font-semibold">
               打鍵速度 (CPM)
             </div>
             <div
               id="resCPM"
-              className="text-2xl font-black text-white font-mono-code"
+              className={`text-2xl font-black font-mono-code ${isLight ? 'text-slate-800' : 'text-white'}`}
             >
               {stats.cpm}
             </div>
           </div>
-          <div className="bg-slate-950/60 p-3 rounded-2xl border border-slate-800">
-            <div className="text-[10px] text-slate-400 uppercase font-semibold">
+          <div className={`p-3 rounded-2xl border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'}`}>
+            <div className="text-[10px] text-slate-500 uppercase font-semibold">
               正確率
             </div>
             <div
               id="resAccuracy"
-              className="text-2xl font-black text-emerald-400 font-mono-code"
+              className="text-2xl font-black text-emerald-600 font-mono-code"
             >
               {stats.accuracy}%
             </div>
           </div>
-          <div className="bg-slate-950/60 p-3 rounded-2xl border border-slate-800">
-            <div className="text-[10px] text-slate-400 uppercase font-semibold">
+          <div className={`p-3 rounded-2xl border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'}`}>
+            <div className="text-[10px] text-slate-500 uppercase font-semibold">
               最大コンボ
             </div>
             <div
               id="resMaxCombo"
-              className="text-2xl font-black text-amber-400 font-mono-code"
+              className="text-2xl font-black text-amber-500 font-mono-code"
             >
               {stats.maxCombo}
             </div>
           </div>
-          <div className="bg-slate-950/60 p-3 rounded-2xl border border-slate-800">
-            <div className="text-[10px] text-slate-400 uppercase font-semibold">
+          <div className={`p-3 rounded-2xl border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'}`}>
+            <div className="text-[10px] text-slate-500 uppercase font-semibold">
               正解打鍵数
             </div>
             <div
               id="resCorrectKeys"
-              className="text-lg font-bold text-slate-200 font-mono-code"
+              className={`text-lg font-bold font-mono-code ${isLight ? 'text-slate-700' : 'text-slate-200'}`}
             >
               {stats.totalCorrectKeys}
             </div>
           </div>
-          <div className="bg-slate-950/60 p-3 rounded-2xl border border-slate-800">
-            <div className="text-[10px] text-slate-400 uppercase font-semibold">
+          <div className={`p-3 rounded-2xl border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'}`}>
+            <div className="text-[10px] text-slate-500 uppercase font-semibold">
               ミス打鍵数
             </div>
             <div
               id="resMissedKeys"
-              className="text-lg font-bold text-rose-400 font-mono-code"
+              className="text-lg font-bold text-rose-500 font-mono-code"
             >
               {stats.totalMissedKeys}
             </div>
@@ -181,14 +203,18 @@ export const ResultModal: React.FC<ResultModalProps> = ({
           <button
             id="btnCloseResult"
             onClick={onClose}
-            className="px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition border border-slate-700 cursor-pointer"
+            className={`px-5 py-3 rounded-2xl font-bold transition border cursor-pointer ${
+              isLight
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+            }`}
           >
             閉じる
           </button>
         </div>
 
         {/* Chrome AI Advice Trigger Button */}
-        <div className="mt-4 pt-4 border-t border-slate-800">
+        <div className={`mt-4 pt-4 border-t ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
           <button
             id="btnOpenAIAdvice"
             onClick={onOpenAI}
@@ -207,12 +233,19 @@ interface AIModalProps {
   isOpen: boolean;
   stats: ResultStats | null;
   onClose: () => void;
+  theme?: 'dark' | 'light';
 }
 
-export const AIModal: React.FC<AIModalProps> = ({ isOpen, stats, onClose }) => {
+export const AIModal: React.FC<AIModalProps> = ({
+  isOpen,
+  stats,
+  onClose,
+  theme = 'dark',
+}) => {
   const [loading, setLoading] = useState(true);
   const [adviceList, setAdviceList] = useState<string[]>([]);
   const [badgeText, setBadgeText] = useState('AI Ready');
+  const isLight = theme === 'light';
   const [badgeClass, setBadgeClass] = useState(
     'text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-500/30'
   );
@@ -231,7 +264,9 @@ export const AIModal: React.FC<AIModalProps> = ({ isOpen, stats, onClose }) => {
         if (capabilities.available !== 'no') {
           setBadgeText('Gemini Nano (Local)');
           setBadgeClass(
-            'text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30'
+            isLight
+              ? 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300'
+              : 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30'
           );
 
           const session = await windowAi.languageModel.create({
@@ -260,7 +295,9 @@ export const AIModal: React.FC<AIModalProps> = ({ isOpen, stats, onClose }) => {
     // Fallback AI Diagnostic Engine
     setBadgeText('Chrome AI (Simulated)');
     setBadgeClass(
-      'text-[10px] px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-500/30'
+      isLight
+        ? 'text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-300'
+        : 'text-[10px] px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-500/30'
     );
 
     setTimeout(() => {
@@ -327,21 +364,23 @@ export const AIModal: React.FC<AIModalProps> = ({ isOpen, stats, onClose }) => {
     >
       <div
         id="aiCard"
-        className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl transition-transform duration-300 flex flex-col max-h-[85vh]"
+        className={`w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl transition-transform duration-300 flex flex-col max-h-[85vh] border ${
+          isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-100'
+        }`}
       >
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className={`flex items-center justify-between pb-4 border-b ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-white shadow-md">
               <i className="fa-solid fa-brain"></i>
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-100 flex items-center space-x-2">
+              <h2 className={`text-lg font-bold flex items-center space-x-2 ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
                 <span>Chrome内蔵AI コーチ</span>
                 <span id="aiStatusBadge" className={badgeClass}>
                   {badgeText}
                 </span>
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                 Gemini Nanoによる個別タイピング診断
               </p>
             </div>
@@ -349,7 +388,9 @@ export const AIModal: React.FC<AIModalProps> = ({ isOpen, stats, onClose }) => {
           <button
             id="btnCloseAIModal"
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition cursor-pointer"
+            className={`p-2 rounded-lg transition cursor-pointer ${
+              isLight ? 'text-slate-400 hover:text-slate-700 hover:bg-slate-100' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
           >
             <i className="fa-solid fa-xmark text-lg"></i>
           </button>
@@ -363,16 +404,18 @@ export const AIModal: React.FC<AIModalProps> = ({ isOpen, stats, onClose }) => {
               className="flex flex-col items-center justify-center py-8 space-y-3"
             >
               <div className="w-10 h-10 border-4 border-purple-500/30 border-t-purple-400 rounded-full animate-spin"></div>
-              <p className="text-xs text-slate-400 font-medium">
+              <p className={`text-xs font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                 Chrome内蔵AIが成績を分析中...
               </p>
             </div>
           ) : (
-            <div id="aiContent" className="text-sm text-slate-200 leading-relaxed space-y-3">
+            <div id="aiContent" className={`text-sm leading-relaxed space-y-3 ${isLight ? 'text-slate-700' : 'text-slate-200'}`}>
               {adviceList.map((advice, idx) => (
                 <p
                   key={idx}
-                  className="bg-slate-950/50 p-3.5 rounded-xl border border-slate-800/80"
+                  className={`p-3.5 rounded-xl border ${
+                    isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/50 border-slate-800/80'
+                  }`}
                 >
                   {advice}
                 </p>
@@ -381,11 +424,15 @@ export const AIModal: React.FC<AIModalProps> = ({ isOpen, stats, onClose }) => {
           )}
         </div>
 
-        <div className="pt-4 border-t border-slate-800 flex justify-end space-x-3">
+        <div className={`pt-4 border-t flex justify-end space-x-3 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
           <button
             id="btnReanalyze"
             onClick={fetchAdvice}
-            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700 transition flex items-center space-x-1.5 cursor-pointer"
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold border transition flex items-center space-x-1.5 cursor-pointer ${
+              isLight
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+            }`}
           >
             <i className="fa-solid fa-arrows-rotate"></i>
             <span>再分析</span>
@@ -411,6 +458,7 @@ interface CustomModalProps {
   onDelete: (index: number) => void;
   onReset: () => void;
   onStartCustomPractice: () => void;
+  theme?: 'dark' | 'light';
 }
 
 export const CustomModal: React.FC<CustomModalProps> = ({
@@ -421,12 +469,15 @@ export const CustomModal: React.FC<CustomModalProps> = ({
   onDelete,
   onReset,
   onStartCustomPractice,
+  theme = 'dark',
 }) => {
   const [main, setMain] = useState('');
   const [sub, setSub] = useState('');
   const [romaji, setRomaji] = useState('');
 
   if (!isOpen) return null;
+
+  const isLight = theme === 'light';
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -457,29 +508,33 @@ export const CustomModal: React.FC<CustomModalProps> = ({
     >
       <div
         id="customCard"
-        className="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-3xl p-6 sm:p-8 shadow-2xl transition-transform duration-300 max-h-[90vh] flex flex-col"
+        className={`w-full max-w-2xl rounded-3xl p-6 sm:p-8 shadow-2xl transition-transform duration-300 max-h-[90vh] flex flex-col border ${
+          isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-100'
+        }`}
       >
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className={`flex items-center justify-between pb-4 border-b ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
           <div className="flex items-center space-x-2">
-            <i className="fa-solid fa-user-pen text-cyan-400 text-xl"></i>
-            <h2 className="text-lg font-bold text-slate-100">
+            <i className="fa-solid fa-user-pen text-cyan-500 text-xl"></i>
+            <h2 className={`text-lg font-bold ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
               カスタム文章エディタ
             </h2>
           </div>
           <button
             id="btnCloseCustomModal"
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition cursor-pointer"
+            className={`p-2 rounded-lg transition cursor-pointer ${
+              isLight ? 'text-slate-400 hover:text-slate-700 hover:bg-slate-100' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
           >
             <i className="fa-solid fa-xmark text-lg"></i>
           </button>
         </div>
 
         {/* Input Form */}
-        <form onSubmit={handleAdd} className="py-4 space-y-3 border-b border-slate-800">
+        <form onSubmit={handleAdd} className={`py-4 space-y-3 border-b ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">
+              <label className={`block text-xs font-semibold mb-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                 表示テキスト (漢字・かな・英文など)
               </label>
               <input
@@ -488,11 +543,15 @@ export const CustomModal: React.FC<CustomModalProps> = ({
                 placeholder="例: 吾輩は猫である"
                 value={main}
                 onChange={(e) => setMain(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyan-500"
+                className={`w-full rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-cyan-500 border ${
+                  isLight
+                    ? 'bg-slate-50 border-slate-300 text-slate-800 focus:bg-white'
+                    : 'bg-slate-950 border-slate-800 text-slate-100'
+                }`}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">
+              <label className={`block text-xs font-semibold mb-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                 サブ表示 (読みがな・解説など)
               </label>
               <input
@@ -501,12 +560,16 @@ export const CustomModal: React.FC<CustomModalProps> = ({
                 placeholder="例: わがはいはねこである"
                 value={sub}
                 onChange={(e) => setSub(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyan-500"
+                className={`w-full rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-cyan-500 border ${
+                  isLight
+                    ? 'bg-slate-50 border-slate-300 text-slate-800 focus:bg-white'
+                    : 'bg-slate-950 border-slate-800 text-slate-100'
+                }`}
               />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-400 mb-1">
+            <label className={`block text-xs font-semibold mb-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
               タイピング用ローマ字 / 英数字キー
             </label>
             <input
@@ -515,13 +578,17 @@ export const CustomModal: React.FC<CustomModalProps> = ({
               placeholder="例: wagahaihanekodearu"
               value={romaji}
               onChange={(e) => setRomaji(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-cyan-300 font-mono-code focus:outline-none focus:border-cyan-500"
+              className={`w-full rounded-xl px-3 py-2 text-sm font-mono-code focus:outline-none focus:border-cyan-500 border ${
+                isLight
+                  ? 'bg-slate-50 border-slate-300 text-cyan-700 focus:bg-white'
+                  : 'bg-slate-950 border-slate-800 text-cyan-300'
+              }`}
             />
           </div>
           <button
             id="btnAddSentence"
             type="submit"
-            className="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm transition flex items-center justify-center space-x-2 cursor-pointer"
+            className="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm transition flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-cyan-600/20"
           >
             <i className="fa-solid fa-plus"></i>
             <span>課題文章を追加する</span>
@@ -530,41 +597,51 @@ export const CustomModal: React.FC<CustomModalProps> = ({
 
         {/* Sentence List */}
         <div className="flex-grow overflow-y-auto py-4 space-y-2 pr-1">
-          <div className="flex items-center justify-between text-xs text-slate-400 font-semibold mb-2">
-            <span>
+          <div className="flex items-center justify-between text-xs font-semibold mb-2">
+            <span className={isLight ? 'text-slate-600' : 'text-slate-400'}>
               登録中の文章 (<span id="customCount">{customList.length}</span>件)
             </span>
             <button
               id="btnResetDefaults"
               type="button"
               onClick={onReset}
-              className="text-rose-400 hover:underline cursor-pointer"
+              className="text-rose-500 hover:underline cursor-pointer"
             >
               デフォルトに戻す
             </button>
           </div>
           <div id="customList" className="space-y-2">
             {customList.length === 0 ? (
-              <div className="text-center py-6 text-slate-500 text-xs">
+              <div className={`text-center py-6 text-xs ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
                 登録された課題がありません。上のフォームから自由に追加できます。
               </div>
             ) : (
               customList.map((item, index) => (
                 <div
                   key={index}
-                  className="bg-slate-950/60 border border-slate-800 p-3 rounded-2xl flex items-center justify-between text-xs"
+                  className={`p-3 rounded-2xl flex items-center justify-between text-xs border ${
+                    isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'
+                  }`}
                 >
                   <div className="overflow-hidden mr-2">
-                    <div className="font-bold text-slate-200 truncate">{item.main}</div>
-                    <div className="text-[11px] text-slate-400 truncate">{item.sub}</div>
-                    <div className="text-[11px] font-mono-code text-cyan-400 truncate">
+                    <div className={`font-bold truncate ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
+                      {item.main}
+                    </div>
+                    <div className={`text-[11px] truncate ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                      {item.sub}
+                    </div>
+                    <div className="text-[11px] font-mono-code text-cyan-600 truncate">
                       {item.romaji}
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => onDelete(index)}
-                    className="text-slate-500 hover:text-rose-400 p-2 rounded-lg hover:bg-slate-800 transition flex-shrink-0 cursor-pointer"
+                    className={`p-2 rounded-lg transition flex-shrink-0 cursor-pointer ${
+                      isLight
+                        ? 'text-slate-400 hover:text-rose-500 hover:bg-slate-100'
+                        : 'text-slate-500 hover:text-rose-400 hover:bg-slate-800'
+                    }`}
                     title="削除"
                   >
                     <i className="fa-solid fa-trash-can text-sm"></i>
@@ -575,12 +652,16 @@ export const CustomModal: React.FC<CustomModalProps> = ({
           </div>
         </div>
 
-        <div className="pt-4 border-t border-slate-800 text-right">
+        <div className={`pt-4 border-t text-right ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
           <button
             id="btnStartCustomPractice"
             type="button"
             onClick={onStartCustomPractice}
-            className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-sm border border-slate-700 transition cursor-pointer"
+            className={`px-6 py-2.5 rounded-xl font-bold text-sm border transition cursor-pointer ${
+              isLight
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                : 'bg-slate-800 hover:bg-slate-700 text-cyan-300 border-slate-700'
+            }`}
           >
             「カスタムモード」で練習を開始
           </button>

@@ -4,6 +4,7 @@ interface VirtualKeyboardProps {
   targetKey: string;
   activeKey: string | null;
   onKeyClick?: (key: string) => void;
+  theme?: 'dark' | 'light';
 }
 
 const ROW_1 = ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '-'];
@@ -14,17 +15,22 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
   targetKey,
   activeKey,
   onKeyClick,
+  theme = 'dark',
 }) => {
   const getKeyClass = (key: string) => {
     const isTarget = targetKey.toLowerCase() === key.toLowerCase();
     const isActive = activeKey?.toLowerCase() === key.toLowerCase();
 
-    let base =
-      'key rounded-lg bg-slate-800 border border-slate-700 text-slate-300 font-bold text-xs sm:text-sm h-10 sm:h-12 flex-1 max-w-[50px] flex items-center justify-center cursor-pointer select-none';
+    const isLight = theme === 'light';
+
+    let base = isLight
+      ? 'key rounded-lg bg-white border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm h-10 sm:h-12 flex-1 max-w-[50px] flex items-center justify-center cursor-pointer select-none shadow-sm hover:bg-slate-50'
+      : 'key rounded-lg bg-slate-800 border border-slate-700 text-slate-300 font-bold text-xs sm:text-sm h-10 sm:h-12 flex-1 max-w-[50px] flex items-center justify-center cursor-pointer select-none';
 
     if (key === ' ') {
-      base =
-        'key rounded-lg bg-slate-800 border border-slate-700 text-slate-300 font-bold text-xs sm:text-sm h-10 sm:h-11 w-full max-w-[320px] flex items-center justify-center cursor-pointer select-none';
+      base = isLight
+        ? 'key rounded-lg bg-white border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm h-10 sm:h-11 w-full max-w-[320px] flex items-center justify-center cursor-pointer select-none shadow-sm hover:bg-slate-50'
+        : 'key rounded-lg bg-slate-800 border border-slate-700 text-slate-300 font-bold text-xs sm:text-sm h-10 sm:h-11 w-full max-w-[320px] flex items-center justify-center cursor-pointer select-none';
     }
 
     if (isActive) {
@@ -37,7 +43,13 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
   };
 
   return (
-    <div className="w-full bg-slate-900/60 border border-slate-800/80 p-3 sm:p-5 rounded-3xl backdrop-blur-md shadow-xl flex flex-col items-center space-y-2">
+    <div
+      className={`w-full p-3 sm:p-5 rounded-3xl backdrop-blur-md shadow-xl flex flex-col items-center space-y-2 transition-colors duration-200 ${
+        theme === 'light'
+          ? 'bg-white/80 border border-slate-200 shadow-slate-200/50'
+          : 'bg-slate-900/60 border border-slate-800/80 shadow-xl'
+      }`}
+    >
       {/* Row 1 */}
       <div className="flex space-x-1 sm:space-x-1.5 w-full justify-center">
         {ROW_1.map((k) => (
