@@ -38,12 +38,23 @@ export const KANA_MAP: Record<string, string[]> = {
   'ゃ': ['lya', 'xya'], 'ゅ': ['lyu', 'xyu'], 'ょ': ['lyo', 'xyo'], 'ゎ': ['lwa', 'xwa'],
   'っ': ['ltu', 'ltsu', 'xtu', 'xtsu'],
   'ー': ['-'], '、': [','], '。': ['.'], '！': ['!'], '？': ['?'],
-  ' ': [' ']
+  ' ': [' '],
+  '0': ['0'], '1': ['1'], '2': ['2'], '3': ['3'], '4': ['4'],
+  '5': ['5'], '6': ['6'], '7': ['7'], '8': ['8'], '9': ['9'],
+  '０': ['0'], '１': ['1'], '２': ['2'], '３': ['3'], '４': ['4'],
+  '５': ['5'], '６': ['6'], '７': ['7'], '８': ['8'], '９': ['9'],
+  ':': [':'], ';': [';'], '/': ['/'], '%': ['%'], '+': ['+'], '=': ['='], '@': ['@'], '*': ['*'],
+  '／': ['/'], '：': [':'], '；': [';'], '％': ['%'], '＋': ['+'], '＝': ['='], '＠': ['@'], '＊': ['*']
 };
 
 export function tokenizeHiragana(text: string): string[] {
+  // Normalize full-width digits to half-width digits
+  const normalizedDigits = text.replace(/[０-９]/g, match => {
+    return String.fromCharCode(match.charCodeAt(0) - 0xfee0);
+  });
+
   // Normalize katakana to hiragana
-  const hiragana = text.replace(/[\u30a1-\u30f6]/g, match => {
+  const hiragana = normalizedDigits.replace(/[\u30a1-\u30f6]/g, match => {
     return String.fromCharCode(match.charCodeAt(0) - 0x60);
   });
 

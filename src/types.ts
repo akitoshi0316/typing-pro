@@ -4,7 +4,7 @@ export interface WordItem {
   romaji?: string;
 }
 
-export type CategoryKey = 'japanese' | 'english' | 'programming' | 'custom';
+export type CategoryKey = 'japanese' | 'english' | 'programming' | 'numbers' | 'custom';
 export type ThemeMode = 'dark' | 'light';
 
 export interface DisplayParts {

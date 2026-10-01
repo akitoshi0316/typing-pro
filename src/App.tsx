@@ -494,13 +494,45 @@ export default function App() {
 
       if (!isPlayingRef.current) return;
 
+      let char = e.code === 'Space' ? ' ' : e.key;
+
+      // Handle Numpad keys (e.g. Numpad0 -> '0', NumpadSubtract -> '-')
+      if (e.code && e.code.startsWith('Numpad')) {
+        const numpadMap: Record<string, string> = {
+          Numpad0: '0',
+          Numpad1: '1',
+          Numpad2: '2',
+          Numpad3: '3',
+          Numpad4: '4',
+          Numpad5: '5',
+          Numpad6: '6',
+          Numpad7: '7',
+          Numpad8: '8',
+          Numpad9: '9',
+          NumpadDecimal: '.',
+          NumpadSubtract: '-',
+          NumpadDivide: '/',
+          NumpadAdd: '+',
+          NumpadMultiply: '*',
+        };
+        if (numpadMap[e.code]) {
+          char = numpadMap[e.code];
+        }
+      }
+
+      // Convert full-width digits (０〜９) to half-width digits (0~9)
+      if (char.length === 1 && char.charCodeAt(0) >= 0xff10 && char.charCodeAt(0) <= 0xff19) {
+        char = String.fromCharCode(char.charCodeAt(0) - 0xfee0);
+      } else if (char === 'ー' || char === '−') {
+        char = '-';
+      }
+
       // Ignore special modifier keys like Shift, Control, Alt, Meta
-      if (e.key.length > 1 && e.key !== ' ' && e.code !== 'Space') {
+      if (char.length > 1 && char !== ' ') {
         return;
       }
 
       e.preventDefault();
-      const char = e.code === 'Space' ? ' ' : e.key;
       processKey(char);
     };
 
@@ -719,6 +751,22 @@ export default function App() {
             >
               <i className="fa-solid fa-code"></i>
               <span>コード</span>
+            </button>
+            <button
+              id="cat-numbers"
+              onClick={() => handleSelectCategory('numbers')}
+              className={`cat-btn py-2 px-3.5 rounded-xl border text-xs sm:text-sm font-medium flex items-center space-x-1.5 transition cursor-pointer ${
+                category === 'numbers'
+                  ? isLight
+                    ? 'border-cyan-500 bg-cyan-50 text-cyan-700 shadow-xs font-semibold'
+                    : 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                  : isLight
+                  ? 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  : 'border-slate-800 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+              }`}
+            >
+              <i className="fa-solid fa-arrow-down-1-9"></i>
+              <span>数字</span>
             </button>
             <button
               id="cat-custom"

@@ -7,9 +7,10 @@ interface VirtualKeyboardProps {
   theme?: 'dark' | 'light';
 }
 
-const ROW_1 = ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '-'];
+const ROW_0 = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-'];
+const ROW_1 = ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'];
 const ROW_2 = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';'];
-const ROW_3 = ['z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.'];
+const ROW_3 = ['z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/'];
 
 export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
   targetKey,
@@ -24,13 +25,13 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
     const isLight = theme === 'light';
 
     let base = isLight
-      ? 'key rounded-lg bg-white border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm h-10 sm:h-12 flex-1 max-w-[50px] flex items-center justify-center cursor-pointer select-none shadow-sm hover:bg-slate-50'
-      : 'key rounded-lg bg-slate-800 border border-slate-700 text-slate-300 font-bold text-xs sm:text-sm h-10 sm:h-12 flex-1 max-w-[50px] flex items-center justify-center cursor-pointer select-none';
+      ? 'key rounded-lg bg-white border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm h-9 sm:h-12 flex-1 max-w-[46px] sm:max-w-[50px] flex items-center justify-center cursor-pointer select-none shadow-sm hover:bg-slate-50'
+      : 'key rounded-lg bg-slate-800 border border-slate-700 text-slate-300 font-bold text-xs sm:text-sm h-9 sm:h-12 flex-1 max-w-[46px] sm:max-w-[50px] flex items-center justify-center cursor-pointer select-none';
 
     if (key === ' ') {
       base = isLight
-        ? 'key rounded-lg bg-white border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm h-10 sm:h-11 w-full max-w-[320px] flex items-center justify-center cursor-pointer select-none shadow-sm hover:bg-slate-50'
-        : 'key rounded-lg bg-slate-800 border border-slate-700 text-slate-300 font-bold text-xs sm:text-sm h-10 sm:h-11 w-full max-w-[320px] flex items-center justify-center cursor-pointer select-none';
+        ? 'key rounded-lg bg-white border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm h-9 sm:h-11 w-full max-w-[320px] flex items-center justify-center cursor-pointer select-none shadow-sm hover:bg-slate-50'
+        : 'key rounded-lg bg-slate-800 border border-slate-700 text-slate-300 font-bold text-xs sm:text-sm h-9 sm:h-11 w-full max-w-[320px] flex items-center justify-center cursor-pointer select-none';
     }
 
     if (isActive) {
@@ -44,12 +45,28 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
 
   return (
     <div
-      className={`w-full p-3 sm:p-5 rounded-3xl backdrop-blur-md shadow-xl flex flex-col items-center space-y-2 transition-colors duration-200 ${
+      className={`w-full p-2.5 sm:p-5 rounded-3xl backdrop-blur-md shadow-xl flex flex-col items-center space-y-1.5 sm:space-y-2 transition-colors duration-200 ${
         theme === 'light'
           ? 'bg-white/80 border border-slate-200 shadow-slate-200/50'
           : 'bg-slate-900/60 border border-slate-800/80 shadow-xl'
       }`}
     >
+      {/* Row 0 - Numbers */}
+      <div className="flex space-x-1 sm:space-x-1.5 w-full justify-center">
+        {ROW_0.map((k) => (
+          <div
+            key={k}
+            id={`key-${k === '-' ? 'hyphen' : k}`}
+            className={getKeyClass(k)}
+            data-key={k}
+            onClick={() => onKeyClick?.(k)}
+            title={`数字キー ${k}`}
+          >
+            {k}
+          </div>
+        ))}
+      </div>
+
       {/* Row 1 */}
       <div className="flex space-x-1 sm:space-x-1.5 w-full justify-center">
         {ROW_1.map((k) => (
@@ -70,7 +87,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
         {ROW_2.map((k) => (
           <div
             key={k}
-            id={`key-${k}`}
+            id={`key-${k === ';' ? 'semicolon' : k}`}
             className={getKeyClass(k)}
             data-key={k}
             onClick={() => onKeyClick?.(k)}
@@ -85,7 +102,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
         {ROW_3.map((k) => (
           <div
             key={k}
-            id={`key-${k === ',' ? 'comma' : k === '.' ? 'dot' : k}`}
+            id={`key-${k === ',' ? 'comma' : k === '.' ? 'dot' : k === '/' ? 'slash' : k}`}
             className={getKeyClass(k)}
             data-key={k}
             onClick={() => onKeyClick?.(k)}
