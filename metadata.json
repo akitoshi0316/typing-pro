@@ -1,6 +1,6 @@
 {
   "name": "TypeMaster Pro",
-  "description": "速度・精度向上トレーニングとローマ字入力判定、AI診断を備えた高機能タイピング練習アプリ",
+  "description": "速度・精度向上トレーニング、ローマ字入力判定、リアルタイム日替わりランキング（Firebase）を備えた高機能タイピング練習アプリ",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

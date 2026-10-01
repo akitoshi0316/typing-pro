@@ -5,7 +5,8 @@ import { KanaRomajiEngine } from './utils/kanaEngine';
 import { DEFAULT_CUSTOM, INITIAL_DATASETS } from './data/sentences';
 import { ParticleCanvas, ParticleCanvasHandle } from './components/ParticleCanvas';
 import { VirtualKeyboard } from './components/VirtualKeyboard';
-import { AIModal, CustomModal, PauseModal, ResultModal } from './components/Modals';
+import { CustomModal, PauseModal, RankingModal, ResultModal } from './components/Modals';
+import { submitScore, prunePastRankingsForCurrentUser } from './services/rankingService';
 import appIcon from './assets/images/app_icon_1789649913266.jpg';
 
 export default function App() {
@@ -21,6 +22,16 @@ export default function App() {
     }
     return 'dark';
   });
+
+  // Custom Background Image state
+  const [customBg, setCustomBg] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('typemaster_custom_bg');
+    } catch {
+      return null;
+    }
+  });
+  const bgFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Audio state
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
@@ -79,9 +90,66 @@ export default function App() {
   // Modals
   const [pauseModalOpen, setPauseModalOpen] = useState<boolean>(false);
   const [resultModalOpen, setResultModalOpen] = useState<boolean>(false);
-  const [aiModalOpen, setAiModalOpen] = useState<boolean>(false);
+  const [rankingModalOpen, setRankingModalOpen] = useState<boolean>(false);
   const [customModalOpen, setCustomModalOpen] = useState<boolean>(false);
   const [lastResultStats, setLastResultStats] = useState<ResultStats | null>(null);
+
+  // Background Image Handlers
+  const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (!result) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const maxWidth = 1920;
+        const maxHeight = 1080;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          if (width / height > maxWidth / maxHeight) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.82);
+          setCustomBg(compressed);
+          try {
+            localStorage.setItem('typemaster_custom_bg', compressed);
+          } catch (err) {
+            console.warn('Could not save background to localStorage:', err);
+          }
+        }
+      };
+      img.src = result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleResetBg = () => {
+    setCustomBg(null);
+    try {
+      localStorage.removeItem('typemaster_custom_bg');
+    } catch (err) {
+      console.warn(err);
+    }
+  };
 
   // Refs for state inside timer and listeners
   const particleCanvasRef = useRef<ParticleCanvasHandle | null>(null);
@@ -383,6 +451,38 @@ export default function App() {
     setCurrentCombo(0);
   }, [timeLimit]);
 
+  // Handle score submission with nickname from ResultModal
+  const handleFinishWithNickname = useCallback(
+    async (nickname: string, action: 'retry' | 'close') => {
+      if (lastResultStats) {
+        try {
+          await submitScore({
+            nickname,
+            cpm: lastResultStats.cpm,
+            accuracy: lastResultStats.accuracyNum,
+            maxCombo: lastResultStats.maxCombo,
+            score: lastResultStats.score,
+            category: lastResultStats.category,
+          });
+          // Prune past days' records created by this user
+          prunePastRankingsForCurrentUser();
+        } catch (e) {
+          console.error('Failed to submit score:', e);
+          throw e;
+        }
+      }
+
+      setResultModalOpen(false);
+
+      if (action === 'retry') {
+        startGame();
+      } else {
+        quitGame();
+      }
+    },
+    [lastResultStats, startGame, quitGame]
+  );
+
   // Process a key strike
   const processKey = useCallback(
     (keyChar: string) => {
@@ -563,6 +663,18 @@ export default function App() {
           : 'selection:bg-cyan-500 selection:text-black'
       }`}
     >
+      {/* Custom Background Image if loaded from PC */}
+      {customBg && (
+        <div
+          id="customBackgroundLayer"
+          className="fixed inset-0 pointer-events-none z-0 bg-cover bg-center transition-all duration-300"
+          style={{
+            backgroundImage: `url(${customBg})`,
+            filter: isLight ? 'brightness(0.92) contrast(0.95)' : 'brightness(0.24) contrast(1.15)',
+          }}
+        />
+      )}
+
       {/* Particle Effect Canvas Background */}
       <ParticleCanvas ref={particleCanvasRef} theme={theme} />
 
@@ -681,6 +793,59 @@ export default function App() {
                 </>
               )}
             </button>
+
+            {/* Today's Ranking Button */}
+            <button
+              id="btnOpenRanking"
+              onClick={() => setRankingModalOpen(true)}
+              className={`px-3 py-2 rounded-xl border text-xs sm:text-sm font-medium transition flex items-center space-x-1.5 cursor-pointer ${
+                isLight
+                  ? 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-800 shadow-xs font-semibold'
+                  : 'bg-amber-950/40 hover:bg-amber-900/50 border-amber-500/40 text-amber-300 shadow-sm'
+              }`}
+              title="今日のランキング（Firebase同期）"
+            >
+              <i className="fa-solid fa-trophy text-amber-500"></i>
+              <span className="hidden sm:inline font-bold">今日のランキング</span>
+            </button>
+
+            {/* Background Image Upload from PC */}
+            <input
+              ref={bgFileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleBgUpload}
+            />
+            <div className="flex items-center">
+              <button
+                id="btnUploadBg"
+                onClick={() => bgFileInputRef.current?.click()}
+                className={`px-3 py-2 rounded-xl border text-xs sm:text-sm font-medium transition flex items-center space-x-1.5 cursor-pointer ${
+                  customBg
+                    ? isLight
+                      ? 'border-purple-300 bg-purple-50 text-purple-700 shadow-xs'
+                      : 'border-purple-500/50 bg-purple-950/40 text-purple-300'
+                    : isLight
+                    ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 shadow-xs hover:border-purple-400'
+                    : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200 shadow-sm hover:border-purple-500/50'
+                }`}
+                title="PC内から背景画像を読み込む"
+              >
+                <i className="fa-solid fa-image text-purple-400"></i>
+                <span className="hidden lg:inline">背景画像</span>
+              </button>
+              {customBg && (
+                <button
+                  id="btnResetBg"
+                  onClick={handleResetBg}
+                  className="ml-1 p-2 rounded-xl text-xs text-rose-400 hover:bg-rose-500/15 transition cursor-pointer"
+                  title="背景画像を初期化"
+                >
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -1166,19 +1331,13 @@ export default function App() {
       <ResultModal
         isOpen={resultModalOpen}
         stats={lastResultStats}
-        onRetry={startGame}
-        onClose={() => setResultModalOpen(false)}
-        onOpenAI={() => {
-          setResultModalOpen(false);
-          setAiModalOpen(true);
-        }}
+        onFinishWithNickname={handleFinishWithNickname}
         theme={theme}
       />
 
-      <AIModal
-        isOpen={aiModalOpen}
-        stats={lastResultStats}
-        onClose={() => setAiModalOpen(false)}
+      <RankingModal
+        isOpen={rankingModalOpen}
+        onClose={() => setRankingModalOpen(false)}
         theme={theme}
       />
 

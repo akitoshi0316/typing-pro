@@ -1,0 +1,60 @@
+{
+  "entities": {
+    "DailyRanking": {
+      "title": "DailyRanking",
+      "description": "Daily leaderboard record for TypeMaster Pro",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "nickname": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 30
+        },
+        "cpm": {
+          "type": "number"
+        },
+        "accuracy": {
+          "type": "number"
+        },
+        "maxCombo": {
+          "type": "number"
+        },
+        "score": {
+          "type": "number"
+        },
+        "category": {
+          "type": "string"
+        },
+        "dateKey": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "nickname",
+        "cpm",
+        "accuracy",
+        "maxCombo",
+        "score",
+        "category",
+        "dateKey",
+        "createdAt",
+        "userId"
+      ]
+    }
+  },
+  "firestore": {
+    "/daily_rankings/{rankingId}": {
+      "schema": "DailyRanking",
+      "description": "Leaderboard scores for today"
+    }
+  }
+}

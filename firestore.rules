@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 64;
+    }
+
+    function isValidRanking(data) {
+      return data.keys().hasAll(['nickname', 'cpm', 'accuracy', 'maxCombo', 'score', 'category', 'dateKey', 'createdAt', 'userId'])
+        && data.keys().hasOnly(['nickname', 'cpm', 'accuracy', 'maxCombo', 'score', 'category', 'dateKey', 'createdAt', 'userId'])
+        && data.nickname is string && data.nickname.size() >= 1 && data.nickname.size() <= 30
+        && data.cpm is number && data.cpm >= 0
+        && data.accuracy is number && data.accuracy >= 0 && data.accuracy <= 100
+        && data.maxCombo is number && data.maxCombo >= 0
+        && data.score is number && data.score >= 0
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 20
+        && data.dateKey is string && data.dateKey.size() == 10
+        && data.createdAt is string
+        && data.userId is string && data.userId == request.auth.uid;
+    }
+
+    match /daily_rankings/{rankingId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(rankingId) && isValidRanking(request.resource.data);
+      allow update: if false;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

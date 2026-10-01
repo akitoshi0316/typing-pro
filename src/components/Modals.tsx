@@ -80,31 +80,75 @@ export const PauseModal: React.FC<PauseModalProps> = ({
   );
 };
 
+import { RankingEntry, subscribeTodayRankings, getTodayDateKey } from '../services/rankingService';
+
 interface ResultModalProps {
   isOpen: boolean;
   stats: ResultStats | null;
-  onRetry: () => void;
-  onClose: () => void;
-  onOpenAI: () => void;
+  onFinishWithNickname: (nickname: string, action: 'retry' | 'close') => Promise<void>;
   theme?: 'dark' | 'light';
 }
 
 export const ResultModal: React.FC<ResultModalProps> = ({
   isOpen,
   stats,
-  onRetry,
-  onClose,
-  onOpenAI,
+  onFinishWithNickname,
   theme = 'dark',
 }) => {
+  const [nickname, setNickname] = useState(() => {
+    try {
+      return localStorage.getItem('typemaster_nickname') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setErrorMsg('');
+      try {
+        const saved = localStorage.getItem('typemaster_nickname');
+        if (saved) setNickname(saved);
+      } catch {
+        // ignore
+      }
+    }
+  }, [isOpen]);
+
   if (!isOpen || !stats) return null;
 
   const isLight = theme === 'light';
 
+  const handleAction = async (action: 'retry' | 'close') => {
+    const trimmed = nickname.trim();
+    if (!trimmed) {
+      setErrorMsg('ニックネームを入力してください（入力しないと終了できません）');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setErrorMsg('');
+      try {
+        localStorage.setItem('typemaster_nickname', trimmed);
+      } catch {
+        // ignore
+      }
+      await onFinishWithNickname(trimmed, action);
+    } catch (err) {
+      console.error(err);
+      setErrorMsg('スコアの保存中にエラーが発生しました。もう一度お試しください。');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div
       id="resultModal"
-      className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg z-50 flex items-center justify-center p-4 transition-opacity duration-300"
+      className="fixed inset-0 bg-slate-950/85 backdrop-blur-lg z-50 flex items-center justify-center p-4 transition-opacity duration-300"
     >
       <div
         id="resultCard"
@@ -121,9 +165,9 @@ export const ResultModal: React.FC<ResultModalProps> = ({
         <h2 id="rankTitle" className={`text-xl font-bold ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
           {stats.rankTitle}
         </h2>
-        <p className={`text-xs mb-6 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>トレーニング結果</p>
+        <p className={`text-xs mb-5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>トレーニング結果</p>
 
-        <div className="grid grid-cols-2 gap-3 mb-6 text-left">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-5 text-left">
           <div className={`p-3 rounded-2xl border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'}`}>
             <div className="text-[10px] text-slate-500 uppercase font-semibold">
               総合スコア
@@ -192,36 +236,93 @@ export const ResultModal: React.FC<ResultModalProps> = ({
           </div>
         </div>
 
-        <div className="flex space-x-3">
+        {/* Mandatory Nickname Input Field */}
+        <div className={`p-4 rounded-2xl border mb-5 text-left transition-colors ${
+          errorMsg
+            ? isLight
+              ? 'bg-rose-50/70 border-rose-300'
+              : 'bg-rose-950/30 border-rose-800/80'
+            : isLight
+            ? 'bg-slate-50/80 border-slate-200'
+            : 'bg-slate-950/70 border-slate-800'
+        }`}>
+          <label htmlFor="resultNicknameInput" className="block text-xs font-bold mb-1.5 flex items-center justify-between">
+            <span className={isLight ? 'text-slate-800' : 'text-slate-200'}>
+              <i className="fa-solid fa-trophy mr-1.5 text-amber-500"></i>
+              ニックネーム（今日のランキングに登録）
+            </span>
+            <span className="text-[11px] font-semibold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">
+              必須
+            </span>
+          </label>
+          <input
+            id="resultNicknameInput"
+            type="text"
+            value={nickname}
+            onChange={(e) => {
+              setNickname(e.target.value);
+              if (errorMsg) setErrorMsg('');
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAction('close');
+              }
+            }}
+            placeholder="ランキングに表示する名前を入力..."
+            maxLength={20}
+            className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold outline-none transition ${
+              isLight
+                ? 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20'
+                : 'bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20'
+            }`}
+          />
+          {errorMsg ? (
+            <p className="text-xs text-rose-500 mt-2 font-semibold flex items-center animate-bounce">
+              <i className="fa-solid fa-circle-exclamation mr-1.5"></i>
+              {errorMsg}
+            </p>
+          ) : (
+            <p className={`text-[11px] mt-1.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+              ※ニックネームを入力するとスコアが「今日のランキング」に即座に反映されます。
+            </p>
+          )}
+        </div>
+
+        {/* Action Buttons: Mandatory registration to exit or retry */}
+        <div className="flex flex-col sm:flex-row space-y-2.5 sm:space-y-0 sm:space-x-3">
           <button
             id="btnPlayAgain"
-            onClick={onRetry}
-            className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold transition shadow-lg shadow-cyan-500/20 cursor-pointer"
+            disabled={isSubmitting}
+            onClick={() => handleAction('retry')}
+            className={`flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold transition shadow-lg shadow-cyan-500/20 cursor-pointer flex items-center justify-center space-x-2 ${
+              isSubmitting ? 'opacity-60 cursor-not-allowed' : ''
+            }`}
           >
-            <i className="fa-solid fa-rotate-right mr-1"></i> もう一度挑む
+            {isSubmitting ? (
+              <>
+                <i className="fa-solid fa-spinner animate-spin"></i>
+                <span>送信中...</span>
+              </>
+            ) : (
+              <>
+                <i className="fa-solid fa-rotate-right"></i>
+                <span>登録してもう一度挑む</span>
+              </>
+            )}
           </button>
           <button
             id="btnCloseResult"
-            onClick={onClose}
-            className={`px-5 py-3 rounded-2xl font-bold transition border cursor-pointer ${
+            disabled={isSubmitting}
+            onClick={() => handleAction('close')}
+            className={`px-6 py-3.5 rounded-2xl font-bold transition border cursor-pointer flex items-center justify-center space-x-1.5 ${
               isLight
-                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
-            }`}
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+            } ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
           >
-            閉じる
-          </button>
-        </div>
-
-        {/* Chrome AI Advice Trigger Button */}
-        <div className={`mt-4 pt-4 border-t ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-          <button
-            id="btnOpenAIAdvice"
-            onClick={onOpenAI}
-            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold transition shadow-lg shadow-purple-500/25 flex items-center justify-center space-x-2 cursor-pointer"
-          >
-            <i className="fa-solid fa-robot text-yellow-300 animate-bounce"></i>
-            <span>Chrome内蔵AIのアドバイスを聞く</span>
+            <i className="fa-solid fa-check"></i>
+            <span>登録して終了</span>
           </button>
         </div>
       </div>
@@ -229,166 +330,96 @@ export const ResultModal: React.FC<ResultModalProps> = ({
   );
 };
 
-interface AIModalProps {
+interface RankingModalProps {
   isOpen: boolean;
-  stats: ResultStats | null;
   onClose: () => void;
   theme?: 'dark' | 'light';
 }
 
-export const AIModal: React.FC<AIModalProps> = ({
+export const RankingModal: React.FC<RankingModalProps> = ({
   isOpen,
-  stats,
   onClose,
   theme = 'dark',
 }) => {
+  const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [adviceList, setAdviceList] = useState<string[]>([]);
-  const [badgeText, setBadgeText] = useState('AI Ready');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
   const isLight = theme === 'light';
-  const [badgeClass, setBadgeClass] = useState(
-    'text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-500/30'
-  );
-
-  const fetchAdvice = async () => {
-    if (!stats) return;
-    setLoading(true);
-    setAdviceList([]);
-
-    try {
-      // Check Chrome Built-in AI (window.ai.languageModel) availability
-      const windowAi = (window as unknown as { ai?: { languageModel?: { capabilities: () => Promise<{ available: string }>; create: (opts: { systemPrompt: string }) => Promise<{ prompt: (p: string) => Promise<string>; destroy: () => void }> } } }).ai;
-
-      if (windowAi?.languageModel) {
-        const capabilities = await windowAi.languageModel.capabilities();
-        if (capabilities.available !== 'no') {
-          setBadgeText('Gemini Nano (Local)');
-          setBadgeClass(
-            isLight
-              ? 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300'
-              : 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30'
-          );
-
-          const session = await windowAi.languageModel.create({
-            systemPrompt:
-              'あなたはプロのタイピングコーチです。タイピング速度(CPM)、正確率、ミス数、コンボ数から、練習者の強みと具体的な改善方法を日本語で親切・簡潔にアドバイスしてください。',
-          });
-
-          const prompt = `カテゴリ:${stats.category}, CPM:${stats.cpm}, 正確率:${stats.accuracy}%, ミス数:${stats.totalMissedKeys}, 最大コンボ:${stats.maxCombo}, ランク:${stats.rank}。この成績に基づくフィードバックをお願いします。`;
-
-          const response = await session.prompt(prompt);
-          session.destroy();
-
-          const parts = response
-            .split('\n')
-            .map((line) => line.trim())
-            .filter((line) => line.length > 0);
-          setAdviceList(parts);
-          setLoading(false);
-          return;
-        }
-      }
-    } catch (err) {
-      console.warn('Chrome AI API unavailable or error:', err);
-    }
-
-    // Fallback AI Diagnostic Engine
-    setBadgeText('Chrome AI (Simulated)');
-    setBadgeClass(
-      isLight
-        ? 'text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-300'
-        : 'text-[10px] px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-500/30'
-    );
-
-    setTimeout(() => {
-      const simulated: string[] = [];
-
-      // CPM Evaluation
-      if (stats.cpm >= 260) {
-        simulated.push(
-          `⚡ 打鍵速度（CPM ${stats.cpm}）はプロ級です！高い指の独立性とリズム感を持っています。`
-        );
-      } else if (stats.cpm >= 160) {
-        simulated.push(
-          `👍 打鍵速度（CPM ${stats.cpm}）はとても良好です。実務や日常作業には十分な速さです。`
-        );
-      } else {
-        simulated.push(
-          `🌱 打鍵速度はCPM ${stats.cpm}です。まずはホームポジションを固定し、キーを探す時間を削ることから始めましょう。`
-        );
-      }
-
-      // Accuracy Evaluation
-      if (stats.accuracyNum >= 97) {
-        simulated.push(
-          `🎯 正確率${stats.accuracy}%と極めて正確です！打ち直しのロスタイムが最小限に抑えられています。`
-        );
-      } else if (stats.accuracyNum >= 90) {
-        simulated.push(
-          `⚠️ 正確率${stats.accuracy}%です。ミスが${stats.totalMissedKeys}回発生しています。スピードを少し落として正確性を意識すると、総合スコアがさらに伸びます。`
-        );
-      } else {
-        simulated.push(
-          `❗ 正確率は${stats.accuracy}%です。正確性を高めることでコンボが繋がり、結果として速度も上がります。`
-        );
-      }
-
-      // Next Actionable Advice
-      if (stats.maxCombo > 30) {
-        simulated.push(
-          `🔥 最大コンボ数${stats.maxCombo}を達成！集中力が持続しています。次は「無制限」モードで長時間の持続力トレーニングに挑戦しましょう。`
-        );
-      } else {
-        simulated.push(
-          `💡 アドバイス: 画面から目を離さず、画面上のキーガイドを見ながらブラインドタッチの精度を高める練習が効果的です。`
-        );
-      }
-
-      setAdviceList(simulated);
-      setLoading(false);
-    }, 600);
-  };
+  const todayDate = getTodayDateKey();
 
   useEffect(() => {
-    if (isOpen) {
-      fetchAdvice();
-    }
-  }, [isOpen, stats]);
+    if (!isOpen) return;
+
+    setLoading(true);
+    const unsubscribe = subscribeTodayRankings(
+      (list) => {
+        setRankings(list);
+        setLoading(false);
+      },
+      () => {
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
+  const filteredRankings = filterCategory === 'all'
+    ? rankings
+    : rankings.filter((r) => r.category === filterCategory);
+
+  const getCategoryLabel = (cat: string) => {
+    switch (cat) {
+      case 'japanese': return '日本語';
+      case 'english': return 'English';
+      case 'programming': return 'コード';
+      case 'numbers': return '数字';
+      case 'custom': return 'カスタム';
+      default: return cat;
+    }
+  };
+
   return (
     <div
-      id="aiModal"
-      className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg z-50 flex items-center justify-center p-4 transition-opacity duration-300"
+      id="rankingModal"
+      className="fixed inset-0 bg-slate-950/85 backdrop-blur-lg z-50 flex items-center justify-center p-3 sm:p-4 transition-opacity duration-300"
     >
       <div
-        id="aiCard"
-        className={`w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl transition-transform duration-300 flex flex-col max-h-[85vh] border ${
+        id="rankingCard"
+        className={`w-full max-w-3xl rounded-3xl p-5 sm:p-7 shadow-2xl flex flex-col max-h-[90vh] border ${
           isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-100'
         }`}
       >
+        {/* Header */}
         <div className={`flex items-center justify-between pb-4 border-b ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-white shadow-md">
-              <i className="fa-solid fa-brain"></i>
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-white text-xl shadow-lg shadow-amber-500/25">
+              <i className="fa-solid fa-trophy"></i>
             </div>
             <div>
-              <h2 className={`text-lg font-bold flex items-center space-x-2 ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                <span>Chrome内蔵AI コーチ</span>
-                <span id="aiStatusBadge" className={badgeClass}>
-                  {badgeText}
+              <div className="flex items-center space-x-2">
+                <h2 className={`text-lg sm:text-xl font-black ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                  今日のランキング
+                </h2>
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-600 border border-amber-500/30">
+                  {todayDate}
                 </span>
-              </h2>
+                <span className="hidden sm:inline-flex items-center space-x-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Firebase 同期中</span>
+                </span>
+              </div>
               <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                Gemini Nanoによる個別タイピング診断
+                毎日0時にリセット。全デバイスのプレイヤーと本日の記録を競い合おう！
               </p>
             </div>
           </div>
           <button
-            id="btnCloseAIModal"
+            id="btnCloseRanking"
             onClick={onClose}
-            className={`p-2 rounded-lg transition cursor-pointer ${
+            className={`p-2.5 rounded-xl transition cursor-pointer ${
               isLight ? 'text-slate-400 hover:text-slate-700 hover:bg-slate-100' : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
@@ -396,53 +427,175 @@ export const AIModal: React.FC<AIModalProps> = ({
           </button>
         </div>
 
-        {/* Advice Output Container */}
-        <div className="py-5 flex-grow overflow-y-auto space-y-3">
-          {loading ? (
-            <div
-              id="aiLoading"
-              className="flex flex-col items-center justify-center py-8 space-y-3"
+        {/* Category Filter Tabs */}
+        <div className="flex items-center space-x-1.5 py-3 overflow-x-auto">
+          {[
+            { id: 'all', label: 'すべて' },
+            { id: 'japanese', label: '日本語' },
+            { id: 'english', label: 'English' },
+            { id: 'programming', label: 'コード' },
+            { id: 'numbers', label: '数字' },
+            { id: 'custom', label: 'カスタム' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setFilterCategory(tab.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                filterCategory === tab.id
+                  ? isLight
+                    ? 'bg-amber-500 text-white shadow-sm'
+                    : 'bg-amber-500 text-slate-950 font-bold'
+                  : isLight
+                  ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : 'bg-slate-800/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+              }`}
             >
-              <div className="w-10 h-10 border-4 border-purple-500/30 border-t-purple-400 rounded-full animate-spin"></div>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Rankings Table / List */}
+        <div className="flex-grow overflow-y-auto py-2 pr-1 space-y-2.5 min-h-[220px]">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 space-y-3">
+              <div className="w-10 h-10 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin"></div>
               <p className={`text-xs font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                Chrome内蔵AIが成績を分析中...
+                Firebaseから本日の最新ランキングを取得中...
+              </p>
+            </div>
+          ) : filteredRankings.length === 0 ? (
+            <div className={`flex flex-col items-center justify-center py-16 text-center rounded-2xl border ${
+              isLight ? 'bg-slate-50/70 border-slate-200' : 'bg-slate-950/40 border-slate-800/80'
+            }`}>
+              <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-3xl mb-3">
+                <i className="fa-solid fa-award"></i>
+              </div>
+              <p className={`text-sm font-bold mb-1 ${isLight ? 'text-slate-700' : 'text-slate-200'}`}>
+                本日のランキング記録はまだありません
+              </p>
+              <p className={`text-xs max-w-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                タイピング練習を完了してニックネームを登録すると、本日最初の1位に輝きます！
               </p>
             </div>
           ) : (
-            <div id="aiContent" className={`text-sm leading-relaxed space-y-3 ${isLight ? 'text-slate-700' : 'text-slate-200'}`}>
-              {adviceList.map((advice, idx) => (
-                <p
-                  key={idx}
-                  className={`p-3.5 rounded-xl border ${
-                    isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/50 border-slate-800/80'
+            filteredRankings.map((item, index) => {
+              const rank = index + 1;
+              const isTop1 = rank === 1;
+              const isTop2 = rank === 2;
+              const isTop3 = rank === 3;
+
+              return (
+                <div
+                  key={item.id}
+                  className={`p-3 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all ${
+                    isTop1
+                      ? isLight
+                        ? 'bg-gradient-to-r from-amber-50 via-yellow-50/40 to-white border-amber-300 shadow-sm'
+                        : 'bg-gradient-to-r from-amber-950/40 via-yellow-950/20 to-slate-900 border-amber-500/50 shadow-md'
+                      : isTop2
+                      ? isLight
+                        ? 'bg-slate-50 border-slate-300'
+                        : 'bg-slate-800/60 border-slate-700/80'
+                      : isTop3
+                      ? isLight
+                        ? 'bg-amber-50/30 border-amber-200'
+                        : 'bg-amber-950/20 border-amber-800/40'
+                      : isLight
+                      ? 'bg-white border-slate-200 hover:bg-slate-50'
+                      : 'bg-slate-900/60 border-slate-800/80 hover:bg-slate-800/40'
                   }`}
                 >
-                  {advice}
-                </p>
-              ))}
-            </div>
+                  {/* Left: Rank & Nickname */}
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 shadow-sm ${
+                        isTop1
+                          ? 'bg-gradient-to-tr from-amber-400 to-yellow-500 text-slate-950 ring-2 ring-amber-400/50'
+                          : isTop2
+                          ? 'bg-gradient-to-tr from-slate-300 to-slate-400 text-slate-950'
+                          : isTop3
+                          ? 'bg-gradient-to-tr from-amber-600 to-amber-700 text-white'
+                          : isLight
+                          ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                          : 'bg-slate-800 text-slate-300 border border-slate-700'
+                      }`}
+                    >
+                      {isTop1 ? '🥇' : isTop2 ? '🥈' : isTop3 ? '🥉' : rank}
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <span className={`font-bold text-sm sm:text-base truncate ${
+                          isLight ? 'text-slate-900' : 'text-slate-100'
+                        }`}>
+                          {item.nickname}
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${
+                          isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-800 text-slate-400'
+                        }`}>
+                          {getCategoryLabel(item.category)}
+                        </span>
+                      </div>
+                      <span className={`text-[10px] ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Right: CPM, Accuracy, Max Combo, Score */}
+                  <div className="flex items-center justify-between sm:justify-end space-x-4 sm:space-x-6 text-right">
+                    <div>
+                      <div className="text-[10px] text-slate-400 uppercase font-semibold">CPM</div>
+                      <div className="font-mono-code font-black text-sm sm:text-base text-cyan-500">
+                        {item.cpm}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-[10px] text-slate-400 uppercase font-semibold">正確率</div>
+                      <div className="font-mono-code font-bold text-sm sm:text-base text-emerald-500">
+                        {item.accuracy}%
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-[10px] text-slate-400 uppercase font-semibold">最大コンボ</div>
+                      <div className="font-mono-code font-bold text-sm sm:text-base text-amber-500">
+                        {item.maxCombo}
+                      </div>
+                    </div>
+
+                    <div className="min-w-[70px]">
+                      <div className="text-[10px] text-slate-400 uppercase font-semibold">スコア</div>
+                      <div className={`font-mono-code font-black text-sm sm:text-lg ${
+                        isTop1
+                          ? 'text-amber-500'
+                          : isLight
+                          ? 'text-slate-800'
+                          : 'text-white'
+                      }`}>
+                        {item.score}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
 
-        <div className={`pt-4 border-t flex justify-end space-x-3 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+        {/* Footer */}
+        <div className={`pt-4 border-t flex justify-end ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
           <button
-            id="btnReanalyze"
-            onClick={fetchAdvice}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold border transition flex items-center space-x-1.5 cursor-pointer ${
+            onClick={onClose}
+            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition border cursor-pointer ${
               isLight
-                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
             }`}
           >
-            <i className="fa-solid fa-arrows-rotate"></i>
-            <span>再分析</span>
-          </button>
-          <button
-            id="btnConfirmAdvice"
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition shadow-md shadow-purple-600/30 cursor-pointer"
-          >
-            了解！
+            閉じる
           </button>
         </div>
       </div>
