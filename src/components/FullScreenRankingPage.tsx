@@ -87,6 +87,9 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
     return key;
   })();
 
+  const [pageSize, setPageSize] = useState<number | 'all'>(50);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
   const filteredRankings = rankings.filter((item) => {
     const matchesSearch =
       searchFilter === '' ||
@@ -95,6 +98,26 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
       selectedCategory === 'all' || item.category === selectedCategory;
     return matchesSearch && matchesCat;
   });
+
+  // Reset to first page when search filter or category or page size changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchFilter, selectedCategory, pageSize]);
+
+  const totalPages =
+    pageSize === 'all'
+      ? 1
+      : Math.max(1, Math.ceil(filteredRankings.length / (typeof pageSize === 'number' ? pageSize : 50)));
+
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
+  const displayedRankings =
+    pageSize === 'all'
+      ? filteredRankings
+      : filteredRankings.slice(
+          (safeCurrentPage - 1) * pageSize,
+          safeCurrentPage * pageSize
+        );
 
   return (
     <div
@@ -237,7 +260,7 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
         </div>
 
         {/* Filter and Search Bar */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           <div className="flex items-center space-x-2 overflow-x-auto pb-1 sm:pb-0">
             {[
               { id: 'all', label: '全カテゴリ' },
@@ -264,19 +287,37 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
             ))}
           </div>
 
-          <div className="relative min-w-[220px]">
-            <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
-            <input
-              type="text"
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              placeholder="ニックネームで検索..."
-              className={`w-full pl-9 pr-4 py-2 rounded-xl text-xs sm:text-sm font-medium border outline-none transition ${
+          <div className="flex items-center space-x-3">
+            {/* Record count badge */}
+            <div
+              className={`px-3 py-1.5 rounded-xl border text-xs font-bold whitespace-nowrap flex items-center space-x-1.5 ${
                 isLight
-                  ? 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-cyan-500'
-                  : 'bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-cyan-500'
+                  ? 'bg-white border-slate-200 text-slate-600'
+                  : 'bg-slate-900 border-slate-800 text-slate-300'
               }`}
-            />
+            >
+              <i className="fa-solid fa-database text-cyan-500"></i>
+              <span>全{rankings.length}件</span>
+              {filteredRankings.length !== rankings.length && (
+                <span className="text-cyan-500 font-extrabold">(該当{filteredRankings.length}件)</span>
+              )}
+            </div>
+
+            {/* Search Input */}
+            <div className="relative min-w-[200px] flex-1 sm:flex-initial">
+              <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+              <input
+                type="text"
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                placeholder="ニックネームで検索..."
+                className={`w-full pl-9 pr-4 py-2 rounded-xl text-xs sm:text-sm font-medium border outline-none transition ${
+                  isLight
+                    ? 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-cyan-500'
+                    : 'bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-cyan-500'
+                }`}
+              />
+            </div>
           </div>
         </div>
 
@@ -319,7 +360,8 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr
@@ -342,10 +384,14 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-xs sm:text-sm">
-                  {filteredRankings.map((entry, index) => {
-                    const isTop1 = index === 0;
-                    const isTop2 = index === 1;
-                    const isTop3 = index === 2;
+                  {displayedRankings.map((entry, index) => {
+                    const rankNumber =
+                      pageSize === 'all'
+                        ? index + 1
+                        : (safeCurrentPage - 1) * (typeof pageSize === 'number' ? pageSize : 50) + index + 1;
+                    const isTop1 = rankNumber === 1;
+                    const isTop2 = rankNumber === 2;
+                    const isTop3 = rankNumber === 3;
 
                     const timeStr = (() => {
                       try {
@@ -380,7 +426,7 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
                             </span>
                           ) : (
                             <span className="text-slate-500 font-mono-code font-bold">
-                              #{index + 1}
+                              #{rankNumber}
                             </span>
                           )}
                         </td>
@@ -460,6 +506,81 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {filteredRankings.length > 0 && (
+              <div
+                className={`px-4 sm:px-6 py-3.5 border-t flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold ${
+                  isLight
+                    ? 'bg-slate-50 border-slate-200 text-slate-600'
+                    : 'bg-slate-950/50 border-slate-800 text-slate-400'
+                }`}
+              >
+                <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                  <span>表示件数:</span>
+                  {[25, 50, 100, 'all'].map((size) => (
+                    <button
+                      key={String(size)}
+                      onClick={() => setPageSize(size as number | 'all')}
+                      className={`px-2.5 py-1 rounded-lg border text-xs font-bold transition cursor-pointer ${
+                        pageSize === size
+                          ? 'bg-cyan-500 text-white border-cyan-500 shadow-sm'
+                          : isLight
+                          ? 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'
+                          : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      {size === 'all' ? 'すべて' : `${size}件`}
+                    </button>
+                  ))}
+                  <span className="text-slate-400 ml-2">
+                    (全 {filteredRankings.length} 件中{' '}
+                    {pageSize === 'all'
+                      ? `1 〜 ${filteredRankings.length}`
+                      : `${(safeCurrentPage - 1) * (typeof pageSize === 'number' ? pageSize : 50) + 1} 〜 ${Math.min(
+                          safeCurrentPage * (typeof pageSize === 'number' ? pageSize : 50),
+                          filteredRankings.length
+                        )}`}{' '}
+                    件を表示中)
+                  </span>
+                </div>
+
+                {pageSize !== 'all' && totalPages > 1 && (
+                  <div className="flex items-center space-x-1.5">
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={safeCurrentPage <= 1}
+                      className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                        isLight
+                          ? 'bg-white hover:bg-slate-100 border-slate-200 text-slate-700'
+                          : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-300'
+                      }`}
+                    >
+                      <i className="fa-solid fa-chevron-left mr-1"></i>
+                      前へ
+                    </button>
+
+                    <span className="px-3 py-1 text-xs font-mono font-bold">
+                      {safeCurrentPage} / {totalPages}
+                    </span>
+
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={safeCurrentPage >= totalPages}
+                      className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                        isLight
+                          ? 'bg-white hover:bg-slate-100 border-slate-200 text-slate-700'
+                          : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-300'
+                      }`}
+                    >
+                      次へ
+                      <i className="fa-solid fa-chevron-right ml-1"></i>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            </>
           )}
         </div>
       </main>
