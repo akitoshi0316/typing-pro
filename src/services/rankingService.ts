@@ -5,6 +5,8 @@ import {
   query,
   where,
   onSnapshot,
+  getDocs,
+  deleteDoc,
 } from 'firebase/firestore';
 import { db, auth, ensureAuth, getOrCreateClientId } from '../firebase';
 
@@ -124,4 +126,18 @@ export function subscribeTodayRankings(
  */
 export async function prunePastRankingsForCurrentUser(): Promise<void> {
   // Queries are partitioned strictly by todayKey, so past records are automatically excluded.
+}
+
+/**
+ * Resets/clears all rankings from Firestore (Admin action)
+ */
+export async function resetTodayRankings(): Promise<number> {
+  const colRef = collection(db, 'daily_rankings');
+  const snap = await getDocs(colRef);
+  const deletes: Promise<void>[] = [];
+  snap.forEach((d) => {
+    deletes.push(deleteDoc(d.ref));
+  });
+  await Promise.all(deletes);
+  return deletes.length;
 }

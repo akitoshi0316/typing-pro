@@ -85,7 +85,7 @@ import { RankingEntry, subscribeTodayRankings, getTodayDateKey } from '../servic
 interface ResultModalProps {
   isOpen: boolean;
   stats: ResultStats | null;
-  onFinishWithNickname: (nickname: string, action: 'retry' | 'close') => Promise<void>;
+  onFinishWithNickname: (nickname: string, action: 'retry' | 'close' | 'ranking') => Promise<void>;
   theme?: 'dark' | 'light';
 }
 
@@ -121,7 +121,7 @@ export const ResultModal: React.FC<ResultModalProps> = ({
 
   const isLight = theme === 'light';
 
-  const handleAction = async (action: 'retry' | 'close') => {
+  const handleAction = async (action: 'retry' | 'close' | 'ranking') => {
     const trimmed = nickname.trim();
     if (!trimmed) {
       setErrorMsg('ニックネームを入力してください（入力しないと終了できません）');
@@ -291,12 +291,12 @@ export const ResultModal: React.FC<ResultModalProps> = ({
         </div>
 
         {/* Action Buttons: Mandatory registration to exit or retry */}
-        <div className="flex flex-col sm:flex-row space-y-2.5 sm:space-y-0 sm:space-x-3">
+        <div className="flex flex-col sm:flex-row space-y-2.5 sm:space-y-0 sm:space-x-2.5">
           <button
             id="btnPlayAgain"
             disabled={isSubmitting}
             onClick={() => handleAction('retry')}
-            className={`flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold transition shadow-lg shadow-cyan-500/20 cursor-pointer flex items-center justify-center space-x-2 ${
+            className={`flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold transition shadow-lg shadow-cyan-500/20 cursor-pointer flex items-center justify-center space-x-1.5 text-xs sm:text-sm ${
               isSubmitting ? 'opacity-60 cursor-not-allowed' : ''
             }`}
           >
@@ -308,15 +308,28 @@ export const ResultModal: React.FC<ResultModalProps> = ({
             ) : (
               <>
                 <i className="fa-solid fa-rotate-right"></i>
-                <span>登録してもう一度挑む</span>
+                <span>再挑戦</span>
               </>
             )}
           </button>
+
+          <button
+            id="btnViewRanking"
+            disabled={isSubmitting}
+            onClick={() => handleAction('ranking')}
+            className={`py-3.5 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-bold transition shadow-lg shadow-amber-500/20 cursor-pointer flex items-center justify-center space-x-1.5 text-xs sm:text-sm ${
+              isSubmitting ? 'opacity-60 cursor-not-allowed' : ''
+            }`}
+          >
+            <i className="fa-solid fa-trophy"></i>
+            <span>ランキングを見る</span>
+          </button>
+
           <button
             id="btnCloseResult"
             disabled={isSubmitting}
             onClick={() => handleAction('close')}
-            className={`px-6 py-3.5 rounded-2xl font-bold transition border cursor-pointer flex items-center justify-center space-x-1.5 ${
+            className={`px-4 py-3.5 rounded-2xl font-bold transition border cursor-pointer flex items-center justify-center space-x-1.5 text-xs sm:text-sm ${
               isLight
                 ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
                 : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
@@ -334,12 +347,14 @@ export const ResultModal: React.FC<ResultModalProps> = ({
 interface RankingModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenFullScreen?: () => void;
   theme?: 'dark' | 'light';
 }
 
 export const RankingModal: React.FC<RankingModalProps> = ({
   isOpen,
   onClose,
+  onOpenFullScreen,
   theme = 'dark',
 }) => {
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
@@ -417,15 +432,34 @@ export const RankingModal: React.FC<RankingModalProps> = ({
               </p>
             </div>
           </div>
-          <button
-            id="btnCloseRanking"
-            onClick={onClose}
-            className={`p-2.5 rounded-xl transition cursor-pointer ${
-              isLight ? 'text-slate-400 hover:text-slate-700 hover:bg-slate-100' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <i className="fa-solid fa-xmark text-lg"></i>
-          </button>
+          <div className="flex items-center space-x-1.5">
+            {onOpenFullScreen && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenFullScreen();
+                }}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center space-x-1 transition cursor-pointer ${
+                  isLight
+                    ? 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-800'
+                    : 'bg-amber-950/40 hover:bg-amber-900/50 border-amber-500/40 text-amber-300'
+                }`}
+                title="全画面ページへ移動 (/ランキング)"
+              >
+                <i className="fa-solid fa-up-right-from-square"></i>
+                <span className="hidden sm:inline">全画面で開く</span>
+              </button>
+            )}
+            <button
+              id="btnCloseRanking"
+              onClick={onClose}
+              className={`p-2 rounded-xl transition cursor-pointer ${
+                isLight ? 'text-slate-400 hover:text-slate-700 hover:bg-slate-100' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <i className="fa-solid fa-xmark text-lg"></i>
+            </button>
+          </div>
         </div>
 
         {/* Category Filter Tabs */}

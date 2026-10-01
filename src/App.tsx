@@ -6,6 +6,7 @@ import { DEFAULT_CUSTOM, INITIAL_DATASETS } from './data/sentences';
 import { ParticleCanvas, ParticleCanvasHandle } from './components/ParticleCanvas';
 import { VirtualKeyboard } from './components/VirtualKeyboard';
 import { CustomModal, PauseModal, RankingModal, ResultModal } from './components/Modals';
+import { FullScreenRankingPage } from './components/FullScreenRankingPage';
 import { submitScore, prunePastRankingsForCurrentUser } from './services/rankingService';
 import appIcon from './assets/images/app_icon_1789649913266.jpg';
 
@@ -93,6 +94,65 @@ export default function App() {
   const [rankingModalOpen, setRankingModalOpen] = useState<boolean>(false);
   const [customModalOpen, setCustomModalOpen] = useState<boolean>(false);
   const [lastResultStats, setLastResultStats] = useState<ResultStats | null>(null);
+
+  // SPA Route handling: '/' for Typing Game, '/ランキング' or '/ranking' for full screen ranking page
+  const getInitialRoute = () => {
+    try {
+      const path = decodeURIComponent(window.location.pathname);
+      if (
+        path === '/ランキング' ||
+        path === '/ranking' ||
+        window.location.hash === '#/ranking' ||
+        window.location.hash === '#/ランキング'
+      ) {
+        return '/ランキング';
+      }
+    } catch {
+      // ignore
+    }
+    return '/';
+  };
+  const [currentRoute, setCurrentRoute] = useState<string>(getInitialRoute);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      try {
+        const path = decodeURIComponent(window.location.pathname);
+        if (
+          path === '/ランキング' ||
+          path === '/ranking' ||
+          window.location.hash === '#/ranking' ||
+          window.location.hash === '#/ランキング'
+        ) {
+          setCurrentRoute('/ランキング');
+        } else {
+          setCurrentRoute('/');
+        }
+      } catch {
+        setCurrentRoute('/');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateToRanking = useCallback(() => {
+    try {
+      window.history.pushState({}, '', '/ランキング');
+    } catch {
+      // fallback
+    }
+    setCurrentRoute('/ランキング');
+  }, []);
+
+  const navigateToHome = useCallback(() => {
+    try {
+      window.history.pushState({}, '', '/');
+    } catch {
+      // fallback
+    }
+    setCurrentRoute('/');
+  }, []);
 
   // Background Image Handlers
   const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -453,7 +513,7 @@ export default function App() {
 
   // Handle score submission with nickname from ResultModal
   const handleFinishWithNickname = useCallback(
-    async (nickname: string, action: 'retry' | 'close') => {
+    async (nickname: string, action: 'retry' | 'close' | 'ranking') => {
       if (lastResultStats) {
         try {
           await submitScore({
@@ -476,11 +536,14 @@ export default function App() {
 
       if (action === 'retry') {
         startGame();
+      } else if (action === 'ranking') {
+        quitGame();
+        navigateToRanking();
       } else {
         quitGame();
       }
     },
-    [lastResultStats, startGame, quitGame]
+    [lastResultStats, startGame, quitGame, navigateToRanking]
   );
 
   // Process a key strike
@@ -654,6 +717,18 @@ export default function App() {
 
   const isLight = theme === 'light';
 
+  // Render Full-Screen Ranking Page when route is /ランキング or /ranking
+  if (currentRoute === '/ランキング') {
+    return (
+      <FullScreenRankingPage
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
+        onBack={navigateToHome}
+        customBg={customBg}
+      />
+    );
+  }
+
   return (
     <div
       id="appRoot"
@@ -794,20 +869,24 @@ export default function App() {
               )}
             </button>
 
-            {/* Today's Ranking Button */}
-            <button
+            {/* Today's Ranking Button (Navigates to /ランキング Full Screen) */}
+            <a
               id="btnOpenRanking"
-              onClick={() => setRankingModalOpen(true)}
-              className={`px-3 py-2 rounded-xl border text-xs sm:text-sm font-medium transition flex items-center space-x-1.5 cursor-pointer ${
+              href="/ランキング"
+              onClick={(e) => {
+                e.preventDefault();
+                navigateToRanking();
+              }}
+              className={`px-3 py-2 rounded-xl border text-xs sm:text-sm font-medium transition flex items-center space-x-1.5 cursor-pointer no-underline ${
                 isLight
                   ? 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-800 shadow-xs font-semibold'
                   : 'bg-amber-950/40 hover:bg-amber-900/50 border-amber-500/40 text-amber-300 shadow-sm'
               }`}
-              title="今日のランキング（Firebase同期）"
+              title="今日のランキング（全画面リンク https://.../ランキング）"
             >
               <i className="fa-solid fa-trophy text-amber-500"></i>
               <span className="hidden sm:inline font-bold">今日のランキング</span>
-            </button>
+            </a>
 
             {/* Background Image Upload from PC */}
             <input
@@ -1338,6 +1417,7 @@ export default function App() {
       <RankingModal
         isOpen={rankingModalOpen}
         onClose={() => setRankingModalOpen(false)}
+        onOpenFullScreen={navigateToRanking}
         theme={theme}
       />
 
