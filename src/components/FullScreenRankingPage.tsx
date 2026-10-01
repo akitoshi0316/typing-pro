@@ -5,7 +5,6 @@ import {
   getTodayDateKey,
   resetTodayRankings,
 } from '../services/rankingService';
-import { getOrCreateClientId } from '../firebase';
 
 interface FullScreenRankingPageProps {
   theme: 'dark' | 'light';
@@ -31,7 +30,6 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
   const [searchFilter, setSearchFilter] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  const currentClientId = getOrCreateClientId();
   const isLight = theme === 'light';
 
   useEffect(() => {
@@ -98,12 +96,6 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
     return matchesSearch && matchesCat;
   });
 
-  // Calculate top highlights
-  const topCpm = rankings.length > 0 ? Math.max(...rankings.map((r) => r.cpm)) : 0;
-  const topAccuracy =
-    rankings.length > 0 ? Math.max(...rankings.map((r) => r.accuracy)) : 0;
-  const topScorer = rankings.length > 0 ? rankings[0].nickname : '-';
-
   return (
     <div
       className={`min-h-screen w-full flex flex-col font-sans transition-colors duration-300 relative ${
@@ -163,9 +155,6 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
                     全画面
                   </span>
                 </h1>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">
-                  https://.../ランキング • 毎日自動リセット
-                </p>
               </div>
             </div>
           </div>
@@ -243,44 +232,6 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
               <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
                 本日のタイピング全国・全体ランキング
               </h2>
-              <p className={`text-xs sm:text-sm mt-1 max-w-2xl ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                Firebase Firestoreにより他デバイスと即時同期されます。毎日日付が変わると自動でリセットされます。
-              </p>
-            </div>
-
-            {/* Quick Stats Grid */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-4 w-full md:w-auto">
-              <div
-                className={`p-3 sm:p-4 rounded-2xl border text-center ${
-                  isLight ? 'bg-white/80 border-slate-200' : 'bg-slate-950/60 border-slate-800'
-                }`}
-              >
-                <div className="text-[10px] sm:text-xs text-slate-500 font-semibold">参加者数</div>
-                <div className="text-lg sm:text-2xl font-black text-cyan-500 font-mono-code">
-                  {rankings.length}
-                  <span className="text-xs font-normal ml-0.5">名</span>
-                </div>
-              </div>
-              <div
-                className={`p-3 sm:p-4 rounded-2xl border text-center ${
-                  isLight ? 'bg-white/80 border-slate-200' : 'bg-slate-950/60 border-slate-800'
-                }`}
-              >
-                <div className="text-[10px] sm:text-xs text-slate-500 font-semibold">最高CPM</div>
-                <div className="text-lg sm:text-2xl font-black text-amber-500 font-mono-code">
-                  {topCpm}
-                </div>
-              </div>
-              <div
-                className={`p-3 sm:p-4 rounded-2xl border text-center ${
-                  isLight ? 'bg-white/80 border-slate-200' : 'bg-slate-950/60 border-slate-800'
-                }`}
-              >
-                <div className="text-[10px] sm:text-xs text-slate-500 font-semibold">首位</div>
-                <div className="text-sm sm:text-base font-black truncate max-w-[90px] sm:max-w-[120px] text-emerald-500">
-                  {topScorer}
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -392,7 +343,6 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-xs sm:text-sm">
                   {filteredRankings.map((entry, index) => {
-                    const isSelf = entry.userId === currentClientId;
                     const isTop1 = index === 0;
                     const isTop2 = index === 1;
                     const isTop3 = index === 2;
@@ -412,13 +362,7 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
                     return (
                       <tr
                         key={entry.id}
-                        className={`transition hover:bg-slate-500/5 ${
-                          isSelf
-                            ? isLight
-                              ? 'bg-cyan-50/60 font-semibold'
-                              : 'bg-cyan-950/20 font-semibold'
-                            : ''
-                        }`}
+                        className="transition hover:bg-slate-500/5"
                       >
                         {/* Rank */}
                         <td className="py-4 px-4 sm:px-6 text-center font-black">
@@ -443,16 +387,9 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
 
                         {/* Nickname */}
                         <td className="py-4 px-4 sm:px-6">
-                          <div className="flex items-center space-x-2">
-                            <span className="font-bold text-sm sm:text-base">
-                              {entry.nickname}
-                            </span>
-                            {isSelf && (
-                              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-cyan-500/20 text-cyan-500 border border-cyan-500/30">
-                                あなた
-                              </span>
-                            )}
-                          </div>
+                          <span className="font-bold text-sm sm:text-base">
+                            {entry.nickname}
+                          </span>
                         </td>
 
                         {/* Score */}
