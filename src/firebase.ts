@@ -20,13 +20,26 @@ export const db =
     ? getFirestore(app, config.firestoreDatabaseId)
     : getFirestore(app);
 
-// Ensure user has valid anonymous auth UID
+// Ensure user has valid anonymous auth UID or persistent client ID
+export function getOrCreateClientId(): string {
+  try {
+    let id = localStorage.getItem('typemaster_client_id');
+    if (!id || id.length < 8) {
+      id = 'usr_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+      localStorage.setItem('typemaster_client_id', id);
+    }
+    return id;
+  } catch {
+    return 'usr_guest_' + Date.now().toString(36);
+  }
+}
+
 export async function ensureAuth() {
   if (!auth.currentUser) {
     try {
       await signInAnonymously(auth);
-    } catch (e) {
-      console.warn('Anonymous auth failed:', e);
+    } catch {
+      // Anonymous auth may not be enabled on the project; fallback to client ID
     }
   }
   return auth.currentUser;

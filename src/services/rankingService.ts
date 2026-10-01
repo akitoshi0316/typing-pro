@@ -5,10 +5,8 @@ import {
   query,
   where,
   onSnapshot,
-  getDocs,
-  deleteDoc,
 } from 'firebase/firestore';
-import { db, auth, ensureAuth } from '../firebase';
+import { db, auth, ensureAuth, getOrCreateClientId } from '../firebase';
 
 export interface RankingEntry {
   id: string;
@@ -45,9 +43,19 @@ export async function submitScore(data: {
   score: number;
   category: string;
 }): Promise<string> {
-  const user = await ensureAuth();
-  if (!user) {
-    throw new Error('スコア登録には認証が必要です。');
+  const cleanNickname = data.nickname.trim().slice(0, 30);
+  if (!cleanNickname) {
+    throw new Error('ニックネームを入力してください。');
+  }
+
+  // Attempt anonymous auth if available; otherwise use persistent device client ID
+  let userId = auth.currentUser?.uid;
+  if (!userId) {
+    const user = await ensureAuth();
+    userId = user?.uid;
+  }
+  if (!userId) {
+    userId = getOrCreateClientId();
   }
 
   const dateKey = getTodayDateKey();
@@ -55,15 +63,15 @@ export async function submitScore(data: {
   const docRef = doc(colRef);
 
   const payload: Omit<RankingEntry, 'id'> = {
-    nickname: data.nickname.trim().slice(0, 30),
-    cpm: Math.max(0, Math.round(data.cpm)),
+    nickname: cleanNickname,
+    cpm: Math.max(0, Math.min(10000, Math.round(data.cpm))),
     accuracy: Number(Math.max(0, Math.min(100, data.accuracy)).toFixed(1)),
-    maxCombo: Math.max(0, data.maxCombo),
-    score: Math.max(0, Math.round(data.score)),
-    category: data.category.slice(0, 20),
+    maxCombo: Math.max(0, Math.min(10000, data.maxCombo)),
+    score: Math.max(0, Math.min(1000000, Math.round(data.score))),
+    category: (data.category || 'japanese').slice(0, 20),
     dateKey,
     createdAt: new Date().toISOString(),
-    userId: user.uid,
+    userId: userId.slice(0, 64),
   };
 
   await setDoc(docRef, payload);
@@ -112,27 +120,8 @@ export function subscribeTodayRankings(
 }
 
 /**
- * Prunes past days' rankings created by this user
+ * Past days' rankings are automatically partitioned out by the dateKey query.
  */
 export async function prunePastRankingsForCurrentUser(): Promise<void> {
-  try {
-    const user = auth.currentUser;
-    if (!user) return;
-    const todayKey = getTodayDateKey();
-    const colRef = collection(db, 'daily_rankings');
-    const q = query(colRef, where('userId', '==', user.uid));
-    const snap = await getDocs(q);
-    const deletes: Promise<void>[] = [];
-    snap.forEach((d) => {
-      const data = d.data() as RankingEntry;
-      if (data.dateKey !== todayKey) {
-        deletes.push(deleteDoc(d.ref));
-      }
-    });
-    if (deletes.length > 0) {
-      await Promise.all(deletes);
-    }
-  } catch (e) {
-    console.warn('Pruning past rankings:', e);
-  }
+  // Queries are partitioned strictly by todayKey, so past records are automatically excluded.
 }

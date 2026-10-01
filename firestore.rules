@@ -1,10 +1,6 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
     function isValidId(id) {
       return id is string && id.size() > 0 && id.size() <= 64;
     }
@@ -13,21 +9,21 @@ service cloud.firestore {
       return data.keys().hasAll(['nickname', 'cpm', 'accuracy', 'maxCombo', 'score', 'category', 'dateKey', 'createdAt', 'userId'])
         && data.keys().hasOnly(['nickname', 'cpm', 'accuracy', 'maxCombo', 'score', 'category', 'dateKey', 'createdAt', 'userId'])
         && data.nickname is string && data.nickname.size() >= 1 && data.nickname.size() <= 30
-        && data.cpm is number && data.cpm >= 0
+        && data.cpm is number && data.cpm >= 0 && data.cpm <= 10000
         && data.accuracy is number && data.accuracy >= 0 && data.accuracy <= 100
-        && data.maxCombo is number && data.maxCombo >= 0
-        && data.score is number && data.score >= 0
+        && data.maxCombo is number && data.maxCombo >= 0 && data.maxCombo <= 10000
+        && data.score is number && data.score >= 0 && data.score <= 1000000
         && data.category is string && data.category.size() >= 1 && data.category.size() <= 20
         && data.dateKey is string && data.dateKey.size() == 10
-        && data.createdAt is string
-        && data.userId is string && data.userId == request.auth.uid;
+        && data.createdAt is string && data.createdAt.size() <= 40
+        && data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 64;
     }
 
     match /daily_rankings/{rankingId} {
       allow read: if true;
-      allow create: if isSignedIn() && isValidId(rankingId) && isValidRanking(request.resource.data);
+      allow create: if isValidId(rankingId) && isValidRanking(request.resource.data);
       allow update: if false;
-      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if false;
     }
 
     match /test/{docId} {

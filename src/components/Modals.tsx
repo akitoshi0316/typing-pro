@@ -137,9 +137,10 @@ export const ResultModal: React.FC<ResultModalProps> = ({
         // ignore
       }
       await onFinishWithNickname(trimmed, action);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      setErrorMsg('スコアの保存中にエラーが発生しました。もう一度お試しください。');
+      const msg = err instanceof Error ? err.message : 'スコアの保存中にエラーが発生しました。もう一度お試しください。';
+      setErrorMsg(msg);
     } finally {
       setIsSubmitting(false);
     }
