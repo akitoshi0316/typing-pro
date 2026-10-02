@@ -4,11 +4,14 @@ import {
   setDoc,
   query,
   where,
+  orderBy,
+  limit,
   onSnapshot,
   getDocs,
   deleteDoc,
 } from 'firebase/firestore';
 import { db, auth, ensureAuth, getOrCreateClientId } from '../firebase';
+import { validateNickname } from '../utils/ngWords';
 
 export interface RankingEntry {
   id: string;
@@ -46,8 +49,9 @@ export async function submitScore(data: {
   category: string;
 }): Promise<string> {
   const cleanNickname = data.nickname.trim().slice(0, 30);
-  if (!cleanNickname) {
-    throw new Error('ニックネームを入力してください。');
+  const val = validateNickname(cleanNickname);
+  if (!val.valid) {
+    throw new Error(val.error || 'ニックネームが無効です。');
   }
 
   // Attempt anonymous auth if available; otherwise use persistent device client ID
@@ -126,6 +130,44 @@ export function subscribeTodayRankings(
  */
 export async function prunePastRankingsForCurrentUser(): Promise<void> {
   // Queries are partitioned strictly by todayKey, so past records are automatically excluded.
+}
+
+/**
+ * Subscribes to all-time highest rankings (TOP 10) in real time.
+ */
+export function subscribeAllTimeTop10(
+  onUpdate: (rankings: RankingEntry[]) => void,
+  onError?: (err: Error) => void
+): () => void {
+  const colRef = collection(db, 'daily_rankings');
+  const q = query(colRef, orderBy('score', 'desc'), limit(10));
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const list: RankingEntry[] = [];
+      snapshot.forEach((d) => {
+        const data = d.data() as Omit<RankingEntry, 'id'>;
+        list.push({
+          id: d.id,
+          ...data,
+        });
+      });
+
+      // Tie breaker: higher score, then higher CPM, then higher accuracy
+      list.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        if (b.cpm !== a.cpm) return b.cpm - a.cpm;
+        return b.accuracy - a.accuracy;
+      });
+
+      onUpdate(list);
+    },
+    (err) => {
+      console.error('Error listening to all-time rankings:', err);
+      onError?.(err);
+    }
+  );
 }
 
 /**

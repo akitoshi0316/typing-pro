@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   RankingEntry,
   subscribeTodayRankings,
+  subscribeAllTimeTop10,
   getTodayDateKey,
   resetTodayRankings,
 } from '../services/rankingService';
@@ -22,6 +23,11 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // All-time highest ranking TOP 10 state
+  const [allTimeRankings, setAllTimeRankings] = useState<RankingEntry[]>([]);
+  const [allTimeLoading, setAllTimeLoading] = useState(true);
+
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -34,18 +40,34 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
 
   useEffect(() => {
     setLoading(true);
-    const unsubscribe = subscribeTodayRankings(
+    const unsubToday = subscribeTodayRankings(
       (data) => {
         setRankings(data);
         setLoading(false);
         setError(null);
       },
       (err) => {
+        console.error(err);
         setError('ランキングデータの読み込みに失敗しました。');
         setLoading(false);
       }
     );
-    return () => unsubscribe();
+
+    const unsubAllTime = subscribeAllTimeTop10(
+      (data) => {
+        setAllTimeRankings(data);
+        setAllTimeLoading(false);
+      },
+      (err) => {
+        console.error('All time rankings error:', err);
+        setAllTimeLoading(false);
+      }
+    );
+
+    return () => {
+      unsubToday();
+      unsubAllTime();
+    };
   }, []);
 
   const handleOpenResetModal = () => {
@@ -233,7 +255,7 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 z-10 flex flex-col space-y-6">
+      <main className="flex-1 max-w-[1500px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 z-10 flex flex-col space-y-6">
         {/* Banner Card */}
         <div
           className={`p-6 sm:p-8 rounded-3xl border relative overflow-hidden transition ${
@@ -259,67 +281,71 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
           </div>
         </div>
 
-        {/* Filter and Search Bar */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          <div className="flex items-center space-x-2 overflow-x-auto pb-1 sm:pb-0">
-            {[
-              { id: 'all', label: '全カテゴリ' },
-              { id: 'japanese', label: '日本語' },
-              { id: 'english', label: '英語' },
-              { id: 'programming', label: 'コード' },
-              { id: 'numbers', label: '数字' },
-            ].map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer border ${
-                  selectedCategory === cat.id
-                    ? isLight
-                      ? 'bg-cyan-500 text-white border-cyan-500 shadow-md shadow-cyan-500/20'
-                      : 'bg-cyan-500 text-white border-cyan-500 shadow-md shadow-cyan-500/20'
-                    : isLight
-                    ? 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'
-                    : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
+        {/* 2-Column Grid: Left = All Rankings (Today), Right = All-Time TOP 10 */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left Column: All Rankings (8 cols) */}
+          <div className="lg:col-span-8 flex flex-col space-y-4">
+            {/* Filter and Search Bar */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+              <div className="flex items-center space-x-2 overflow-x-auto pb-1 sm:pb-0">
+                {[
+                  { id: 'all', label: '全カテゴリ' },
+                  { id: 'japanese', label: '日本語' },
+                  { id: 'english', label: '英語' },
+                  { id: 'programming', label: 'コード' },
+                  { id: 'numbers', label: '数字' },
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer border ${
+                      selectedCategory === cat.id
+                        ? isLight
+                          ? 'bg-cyan-500 text-white border-cyan-500 shadow-md shadow-cyan-500/20'
+                          : 'bg-cyan-500 text-white border-cyan-500 shadow-md shadow-cyan-500/20'
+                        : isLight
+                        ? 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'
+                        : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
 
-          <div className="flex items-center space-x-3">
-            {/* Record count badge */}
-            <div
-              className={`px-3 py-1.5 rounded-xl border text-xs font-bold whitespace-nowrap flex items-center space-x-1.5 ${
-                isLight
-                  ? 'bg-white border-slate-200 text-slate-600'
-                  : 'bg-slate-900 border-slate-800 text-slate-300'
-              }`}
-            >
-              <i className="fa-solid fa-database text-cyan-500"></i>
-              <span>全{rankings.length}件</span>
-              {filteredRankings.length !== rankings.length && (
-                <span className="text-cyan-500 font-extrabold">(該当{filteredRankings.length}件)</span>
-              )}
-            </div>
+              <div className="flex items-center space-x-3">
+                {/* Record count badge */}
+                <div
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-bold whitespace-nowrap flex items-center space-x-1.5 ${
+                    isLight
+                      ? 'bg-white border-slate-200 text-slate-600'
+                      : 'bg-slate-900 border-slate-800 text-slate-300'
+                  }`}
+                >
+                  <i className="fa-solid fa-database text-cyan-500"></i>
+                  <span>全{rankings.length}件</span>
+                  {filteredRankings.length !== rankings.length && (
+                    <span className="text-cyan-500 font-extrabold">(該当{filteredRankings.length}件)</span>
+                  )}
+                </div>
 
-            {/* Search Input */}
-            <div className="relative min-w-[200px] flex-1 sm:flex-initial">
-              <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
-              <input
-                type="text"
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                placeholder="ニックネームで検索..."
-                className={`w-full pl-9 pr-4 py-2 rounded-xl text-xs sm:text-sm font-medium border outline-none transition ${
-                  isLight
-                    ? 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-cyan-500'
-                    : 'bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-cyan-500'
-                }`}
-              />
+                {/* Search Input */}
+                <div className="relative min-w-[200px] flex-1 sm:flex-initial">
+                  <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+                  <input
+                    type="text"
+                    value={searchFilter}
+                    onChange={(e) => setSearchFilter(e.target.value)}
+                    placeholder="ニックネームで検索..."
+                    className={`w-full pl-9 pr-4 py-2 rounded-xl text-xs sm:text-sm font-medium border outline-none transition ${
+                      isLight
+                        ? 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-cyan-500'
+                        : 'bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-cyan-500'
+                    }`}
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
         {/* Leaderboard Table Container */}
         <div
@@ -583,7 +609,149 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
             </>
           )}
         </div>
-      </main>
+      </div>
+
+      {/* Right Column: 歴代最高ランキング TOP 10 */}
+      <div className="lg:col-span-4 flex flex-col space-y-4">
+        <div
+          className={`rounded-3xl border overflow-hidden shadow-xl p-5 sm:p-6 transition flex flex-col ${
+            isLight
+              ? 'bg-gradient-to-b from-amber-500/10 via-white to-amber-50/20 border-amber-200/80 shadow-amber-500/5'
+              : 'bg-gradient-to-b from-amber-500/10 via-slate-900 to-slate-950 border-amber-500/30 shadow-2xl'
+          }`}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between pb-4 border-b border-amber-500/20 mb-4">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950 flex items-center justify-center text-lg shadow-md shadow-amber-500/25 font-black">
+                <i className="fa-solid fa-crown"></i>
+              </div>
+              <div>
+                <h3 className="font-black text-base sm:text-lg tracking-tight flex items-center space-x-1.5">
+                  <span>歴代最高ランキング</span>
+                  <span className="text-amber-500 font-extrabold text-sm sm:text-base">TOP 10</span>
+                </h3>
+                <p className={`text-[11px] font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                  全期間のハイスコア歴代殿堂
+                </p>
+              </div>
+            </div>
+
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wider bg-amber-500/20 text-amber-500 border border-amber-500/40 uppercase">
+              LEGENDS
+            </span>
+          </div>
+
+          {/* List of TOP 10 */}
+          {allTimeLoading ? (
+            <div className="py-12 flex flex-col items-center justify-center space-y-2.5 text-center">
+              <i className="fa-solid fa-spinner animate-spin text-2xl text-amber-500"></i>
+              <span className="text-xs text-slate-400 font-semibold">歴代最高記録を取得中...</span>
+            </div>
+          ) : allTimeRankings.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-400 font-medium">
+              まだ歴代記録がありません
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {allTimeRankings.map((entry, idx) => {
+                const rank = idx + 1;
+                const isTop1 = rank === 1;
+                const isTop2 = rank === 2;
+                const isTop3 = rank === 3;
+
+                return (
+                  <div
+                    key={entry.id || idx}
+                    className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                      isTop1
+                        ? isLight
+                          ? 'bg-amber-500/15 border-amber-300 shadow-sm'
+                          : 'bg-amber-500/15 border-amber-500/50 shadow-md shadow-amber-500/10'
+                        : isTop2
+                        ? isLight
+                          ? 'bg-slate-100 border-slate-300'
+                          : 'bg-slate-800/60 border-slate-700'
+                        : isTop3
+                        ? isLight
+                          ? 'bg-amber-50/70 border-amber-200'
+                          : 'bg-amber-950/20 border-amber-700/40'
+                        : isLight
+                        ? 'bg-white/80 border-slate-200 hover:bg-slate-50'
+                        : 'bg-slate-900/60 border-slate-800 hover:bg-slate-800/40'
+                    }`}
+                  >
+                    {/* Rank & Nickname */}
+                    <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+                      <div className="shrink-0 w-7 h-7 flex items-center justify-center font-black text-xs">
+                        {isTop1 ? (
+                          <span className="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center shadow-md shadow-amber-500/30 text-xs">
+                            👑1
+                          </span>
+                        ) : isTop2 ? (
+                          <span className="w-7 h-7 rounded-full bg-gradient-to-tr from-slate-300 to-slate-100 text-slate-800 flex items-center justify-center shadow-sm text-xs">
+                            🥈2
+                          </span>
+                        ) : isTop3 ? (
+                          <span className="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-700 to-amber-500 text-white flex items-center justify-center shadow-sm text-xs">
+                            🥉3
+                          </span>
+                        ) : (
+                          <span className="font-mono text-slate-400 font-bold">
+                            #{rank}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center space-x-1.5">
+                          <span className="font-bold text-xs sm:text-sm truncate">
+                            {entry.nickname}
+                          </span>
+                          <span className="text-[10px] px-1.5 py-0.2 rounded font-medium border border-slate-400/20 text-slate-400 shrink-0">
+                            {entry.category === 'japanese'
+                              ? '日本語'
+                              : entry.category === 'english'
+                              ? '英語'
+                              : entry.category === 'programming'
+                              ? 'コード'
+                              : entry.category === 'numbers'
+                              ? '数字'
+                              : entry.category}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-[10px] text-slate-400 mt-0.5">
+                          <span>{entry.cpm} CPM</span>
+                          <span>•</span>
+                          <span>{entry.accuracy}%</span>
+                          {entry.dateKey && (
+                            <>
+                              <span>•</span>
+                              <span>{entry.dateKey}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Score */}
+                    <div className="text-right shrink-0">
+                      <div className="font-black font-mono-code text-sm sm:text-base text-cyan-500">
+                        {entry.score.toLocaleString()}
+                      </div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400">
+                        PTS
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  </main>
 
       {/* Admin Password Modal for RESET */}
       {resetModalOpen && (

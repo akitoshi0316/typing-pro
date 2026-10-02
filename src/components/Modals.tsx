@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ResultStats, WordItem } from '../types';
+import { validateNickname } from '../utils/ngWords';
 
 interface PauseModalProps {
   isOpen: boolean;
@@ -95,25 +96,16 @@ export const ResultModal: React.FC<ResultModalProps> = ({
   onFinishWithNickname,
   theme = 'dark',
 }) => {
-  const [nickname, setNickname] = useState(() => {
-    try {
-      return localStorage.getItem('typemaster_nickname') || '';
-    } catch {
-      return '';
-    }
-  });
+  // Always initialize with empty string so previous name is not auto-filled
+  const [nickname, setNickname] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
+      // Clear input and error on each opening
+      setNickname('');
       setErrorMsg('');
-      try {
-        const saved = localStorage.getItem('typemaster_nickname');
-        if (saved) setNickname(saved);
-      } catch {
-        // ignore
-      }
     }
   }, [isOpen]);
 
@@ -123,19 +115,15 @@ export const ResultModal: React.FC<ResultModalProps> = ({
 
   const handleAction = async (action: 'retry' | 'close' | 'ranking') => {
     const trimmed = nickname.trim();
-    if (!trimmed) {
-      setErrorMsg('ニックネームを入力してください（入力しないと終了できません）');
+    const val = validateNickname(trimmed);
+    if (!val.valid) {
+      setErrorMsg(val.error || 'ニックネームを入力してください（入力しないと終了できません）');
       return;
     }
 
     try {
       setIsSubmitting(true);
       setErrorMsg('');
-      try {
-        localStorage.setItem('typemaster_nickname', trimmed);
-      } catch {
-        // ignore
-      }
       await onFinishWithNickname(trimmed, action);
     } catch (err: unknown) {
       console.error(err);
