@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { ResultStats, WordItem } from '../types';
 import { validateNickname, getRankPoints, getRankInfo } from '../utils/ngWords';
+import { convertSubToRomaji } from '../utils/kanaEngine';
 
 interface PauseModalProps {
   isOpen: boolean;
@@ -814,13 +815,40 @@ export const CustomModal: React.FC<CustomModalProps> = ({
 
   const isLight = theme === 'light';
 
+  // Automatically generate romaji when sub-reading is typed
+  const handleSubChange = (newSub: string) => {
+    setSub(newSub);
+    const autoRomaji = convertSubToRomaji(newSub);
+    setRomaji(autoRomaji);
+  };
+
+  // When main changes, if sub is empty and main has no kanji, also auto-assist
+  const handleMainChange = (newMain: string) => {
+    setMain(newMain);
+    if (!sub || sub === main) {
+      if (!/[\u4e00-\u9faf]/.test(newMain)) {
+        setSub(newMain);
+        setRomaji(convertSubToRomaji(newMain));
+      }
+    }
+  };
+
+  // Re-generate romaji from current sub reading
+  const handleRegenerateRomaji = () => {
+    const textToConvert = sub.trim() || main.trim();
+    if (textToConvert) {
+      const autoRomaji = convertSubToRomaji(textToConvert);
+      setRomaji(autoRomaji);
+    }
+  };
+
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedMain = main.trim();
     const trimmedSub = sub.trim();
-    const trimmedRomaji = romaji.trim().toLowerCase();
+    const effectiveRomaji = romaji.trim().toLowerCase() || convertSubToRomaji(trimmedSub || trimmedMain);
 
-    if (!trimmedMain || !trimmedRomaji) {
+    if (!trimmedMain || !effectiveRomaji) {
       alert('「表示テキスト」と「タイピング用ローマ字」は必須です。');
       return;
     }
@@ -828,7 +856,7 @@ export const CustomModal: React.FC<CustomModalProps> = ({
     onAdd({
       main: trimmedMain,
       sub: trimmedSub || trimmedMain,
-      romaji: trimmedRomaji,
+      romaji: effectiveRomaji,
     });
 
     setMain('');
@@ -877,7 +905,7 @@ export const CustomModal: React.FC<CustomModalProps> = ({
                 type="text"
                 placeholder="例: 吾輩は猫である"
                 value={main}
-                onChange={(e) => setMain(e.target.value)}
+                onChange={(e) => handleMainChange(e.target.value)}
                 className={`w-full rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-cyan-500 border ${
                   isLight
                     ? 'bg-slate-50 border-slate-300 text-slate-800 focus:bg-white'
@@ -886,15 +914,20 @@ export const CustomModal: React.FC<CustomModalProps> = ({
               />
             </div>
             <div>
-              <label className={`block text-xs font-semibold mb-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                サブ表示 (読みがな・解説など)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className={`block text-xs font-semibold ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                  サブ表示 (読みがな・解説など)
+                </label>
+                <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-medium">
+                  ※打つとローマ字が自動入力
+                </span>
+              </div>
               <input
                 id="inputSub"
                 type="text"
                 placeholder="例: わがはいはねこである"
                 value={sub}
-                onChange={(e) => setSub(e.target.value)}
+                onChange={(e) => handleSubChange(e.target.value)}
                 className={`w-full rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-cyan-500 border ${
                   isLight
                     ? 'bg-slate-50 border-slate-300 text-slate-800 focus:bg-white'
@@ -904,9 +937,28 @@ export const CustomModal: React.FC<CustomModalProps> = ({
             </div>
           </div>
           <div>
-            <label className={`block text-xs font-semibold mb-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-              タイピング用ローマ字 / 英数字キー
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center space-x-2">
+                <label className={`block text-xs font-semibold ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                  タイピング用ローマ字 / 英数字キー
+                </label>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-bold border border-cyan-500/25 flex items-center space-x-1">
+                  <i className="fa-solid fa-wand-magic-sparkles text-[9px]"></i>
+                  <span>自動入力連動</span>
+                </span>
+              </div>
+              {(sub || main) && (
+                <button
+                  type="button"
+                  onClick={handleRegenerateRomaji}
+                  className="text-[11px] text-cyan-500 hover:text-cyan-400 underline cursor-pointer flex items-center space-x-1"
+                  title="サブ表示の読みからローマ字を再変換します"
+                >
+                  <i className="fa-solid fa-arrows-rotate text-[10px]"></i>
+                  <span>読みから再生成</span>
+                </button>
+              )}
+            </div>
             <input
               id="inputRomaji"
               type="text"
@@ -919,6 +971,9 @@ export const CustomModal: React.FC<CustomModalProps> = ({
                   : 'bg-slate-950 border-slate-800 text-cyan-300'
               }`}
             />
+            <p className={`text-[11px] mt-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+              サブ読み（ひらがな・カタカナ・英数字）を入力すると、タイピング用キーが自動的に入力されます。手動で微調整することも可能です。
+            </p>
           </div>
           <button
             id="btnAddSentence"

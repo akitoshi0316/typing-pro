@@ -30,9 +30,16 @@ export const KANA_MAP: Record<string, string[]> = {
   'じゃ': ['ja', 'zya', 'jya'], 'じゅ': ['ju', 'zyu', 'jyu'], 'じょ': ['jo', 'zyo', 'jyo'], 'じぇ': ['je', 'zye', 'jye'],
   'びゃ': ['bya'], 'びゅ': ['byu'], 'びょ': ['byo'],
   'ぴゃ': ['pya'], 'ぴゅ': ['pyu'], 'ぴょ': ['pyo'],
-  'ふぁ': ['fa', 'fua'], 'ふぃ': ['fi', 'fui'], 'ふぇ': ['fe', 'fue'], 'ふぉ': ['fo', 'fuo'],
+  'ふぁ': ['fa', 'fua'], 'ふぃ': ['fi', 'fui'], 'ふぇ': ['fe', 'fue'], 'ふぉ': ['fo', 'fuo'], 'ふゅ': ['fyu'],
   'てぃ': ['thi'], 'てゅ': ['thu'], 'でぃ': ['dhi'], 'でゅ': ['dhu'],
-  'うぃ': ['wi'], 'うぇ': ['we'], 'うぉ': ['who'],
+  'うぃ': ['wi'], 'うぇ': ['we'], 'うぉ': ['who', 'wo'],
+  'ゔ': ['vu'],
+  'ゔぁ': ['va'], 'ゔぃ': ['vi'], 'ゔぇ': ['ve'], 'ゔぉ': ['vo'], 'ゔゅ': ['vyu'],
+  'くぁ': ['kwa', 'qa'], 'くぃ': ['kwi', 'qi'], 'くぇ': ['kwe', 'qe'], 'くぉ': ['kwo', 'qo'],
+  'つぁ': ['tsa'], 'つぃ': ['tsi'], 'つぇ': ['tse'], 'つぉ': ['tso'],
+  'とぅ': ['twu'], 'どぅ': ['dwu'],
+  'てぇ': ['the'], 'でぇ': ['dhe'],
+  'いぇ': ['ye'],
 
   'ぁ': ['la', 'xa'], 'ぃ': ['li', 'xi'], 'ぅ': ['lu', 'xu'], 'ぇ': ['le', 'xe'], 'ぉ': ['lo', 'xo'],
   'ゃ': ['lya', 'xya'], 'ゅ': ['lyu', 'xyu'], 'ょ': ['lyo', 'xyo'], 'ゎ': ['lwa', 'xwa'],
@@ -78,9 +85,98 @@ export const KANA_MAP: Record<string, string[]> = {
   '-': ['-'], 'ー': ['-'], '－': ['-'],
 };
 
+export function normalizeHalfWidthKana(text: string): string {
+  const halfToFullMap: Record<string, string> = {
+    'ｶﾞ': 'ガ', 'ｷﾞ': 'ギ', 'ｸﾞ': 'グ', 'ｹﾞ': 'ゲ', 'ｺﾞ': 'ゴ',
+    'ｻﾞ': 'ザ', 'ｼﾞ': 'ジ', 'ｽﾞ': 'ズ', 'ｾﾞ': 'ゼ', 'ｿﾞ': 'ゾ',
+    'ﾀﾞ': 'ダ', 'ﾁﾞ': 'ヂ', 'ﾂﾞ': 'ヅ', 'ﾃﾞ': 'デ', 'ﾄﾞ': 'ド',
+    'ﾊﾞ': 'バ', 'ﾋﾞ': 'ビ', 'ﾌﾞ': 'ブ', 'ﾍﾞ': 'ベ', 'ﾎﾞ': 'ボ',
+    'ﾊﾟ': 'パ', 'ﾋﾟ': 'ピ', 'ﾌﾟ': 'プ', 'ﾍﾟ': 'ペ', 'ﾎﾟ': 'ポ',
+    'ｳﾞ': 'ヴ',
+    'ｱ': 'ア', 'ｲ': 'イ', 'ｳ': 'ウ', 'ｴ': 'エ', 'ｵ': 'オ',
+    'ｶ': 'カ', 'ｷ': 'キ', 'ｸ': 'ク', 'ｹ': 'ケ', 'ｺ': 'コ',
+    'ｻ': 'サ', 'ｼ': 'シ', 'ｽ': 'ス', 'ｾ': 'セ', 'ｿ': 'ソ',
+    'ﾀ': 'タ', 'ﾁ': 'チ', 'ﾂ': 'ツ', 'ﾃ': 'テ', 'ﾄ': 'ト',
+    'ﾅ': 'ナ', 'ﾆ': 'ニ', 'ﾇ': 'ヌ', 'ﾈ': 'ネ', 'ﾉ': 'ノ',
+    'ﾊ': 'ハ', 'ﾋ': 'ヒ', 'ﾌ': 'フ', 'ﾍ': 'ヘ', 'ﾎ': 'ホ',
+    'ﾏ': 'マ', 'ﾐ': 'ミ', 'ﾑ': 'ム', 'ﾒ': 'メ', 'ﾓ': 'モ',
+    'ﾔ': 'ヤ', 'ﾕ': 'ユ', 'ﾖ': 'ヨ',
+    'ﾗ': 'ラ', 'ﾘ': 'リ', 'ﾙ': 'ル', 'ﾚ': 'レ', 'ﾛ': 'ロ',
+    'ﾜ': 'ワ', 'ｦ': 'ヲ', 'ﾝ': 'ン',
+    'ｧ': 'ァ', 'ｨ': 'ィ', 'ｩ': 'ゥ', 'ｪ': 'ェ', 'ｫ': 'ォ',
+    'ｬ': 'ャ', 'ｭ': 'ュ', 'ｮ': 'ョ', 'ｯ': 'ッ',
+    'ｰ': 'ー', 'ﾞ': '゛', 'ﾟ': '゜',
+  };
+  let res = text;
+  for (const [k, v] of Object.entries(halfToFullMap)) {
+    res = res.split(k).join(v);
+  }
+  return res;
+}
+
+export const DEFAULT_ROMAJI_MAP: Record<string, string> = {
+  // vowels
+  'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o',
+  // ka
+  'か': 'ka', 'き': 'ki', 'く': 'ku', 'け': 'ke', 'こ': 'ko',
+  // sa (shi is standard in datasets)
+  'さ': 'sa', 'し': 'shi', 'す': 'su', 'せ': 'se', 'そ': 'so',
+  // ta (chi, tsu)
+  'た': 'ta', 'ち': 'chi', 'つ': 'tsu', 'て': 'te', 'と': 'to',
+  // na
+  'な': 'na', 'に': 'ni', 'ぬ': 'nu', 'ね': 'ne', 'の': 'no',
+  // ha (fu)
+  'は': 'ha', 'ひ': 'hi', 'ふ': 'fu', 'へ': 'he', 'ほ': 'ho',
+  // ma
+  'ま': 'ma', 'み': 'mi', 'む': 'mu', 'め': 'me', 'も': 'mo',
+  // ya
+  'や': 'ya', 'ゆ': 'yu', 'よ': 'yo',
+  // ra
+  'ら': 'ra', 'り': 'ri', 'る': 'ru', 'れ': 're', 'ろ': 'ro',
+  // wa
+  'わ': 'wa', 'ゐ': 'wi', 'ゑ': 'we', 'を': 'wo',
+  // ga, za, da, ba, pa
+  'が': 'ga', 'ぎ': 'gi', 'ぐ': 'gu', 'げ': 'ge', 'ご': 'go',
+  'ざ': 'za', 'じ': 'ji', 'ず': 'zu', 'ぜ': 'ze', 'ぞ': 'zo',
+  'だ': 'da', 'ぢ': 'di', 'づ': 'du', 'で': 'de', 'ど': 'do',
+  'ば': 'ba', 'び': 'bi', 'ぶ': 'bu', 'べ': 'be', 'ぼ': 'bo',
+  'ぱ': 'pa', 'ぴ': 'pi', 'ぷ': 'pu', 'ぺ': 'pe', 'ぽ': 'po',
+  // vu
+  'ゔ': 'vu',
+  // Yoon (拗音)
+  'きゃ': 'kya', 'きゅ': 'kyu', 'きょ': 'kyo',
+  'しゃ': 'sha', 'しゅ': 'shu', 'しょ': 'sho', 'しぇ': 'she',
+  'ちゃ': 'cha', 'ちゅ': 'chu', 'ちょ': 'cho', 'ちぇ': 'che',
+  'にゃ': 'nya', 'にゅ': 'nyu', 'にょ': 'nyo',
+  'ひゃ': 'hya', 'ひゅ': 'hyu', 'ひょ': 'hyo',
+  'みゃ': 'mya', 'みゅ': 'myu', 'みょ': 'myo',
+  'りゃ': 'rya', 'りゅ': 'ryu', 'りょ': 'ryo',
+  'ぎゃ': 'gya', 'ぎゅ': 'gyu', 'ぎょ': 'gyo',
+  'じゃ': 'ja', 'じゅ': 'ju', 'じょ': 'jo', 'じぇ': 'je',
+  'びゃ': 'bya', 'びゅ': 'byu', 'びょ': 'byo',
+  'ぴゃ': 'pya', 'ぴゅ': 'pyu', 'ぴょ': 'pyo',
+  // foreign sounds
+  'ふぁ': 'fa', 'ふぃ': 'fi', 'ふぇ': 'fe', 'ふぉ': 'fo', 'ふゅ': 'fyu',
+  'てぃ': 'thi', 'てゅ': 'thu', 'でぃ': 'dhi', 'でゅ': 'dhu',
+  'うぃ': 'wi', 'うぇ': 'we', 'うぉ': 'wo',
+  'ゔぁ': 'va', 'ゔぃ': 'vi', 'ゔぇ': 've', 'ゔぉ': 'vo', 'ゔゅ': 'vyu',
+  'くぁ': 'kwa', 'くぃ': 'kwi', 'くぇ': 'kwe', 'くぉ': 'kwo',
+  'つぁ': 'tsa', 'つぃ': 'tsi', 'つぇ': 'tse', 'つぉ': 'tso',
+  'とぅ': 'twu', 'どぅ': 'dwu',
+  'てぇ': 'the', 'でぇ': 'dhe',
+  'いぇ': 'ye',
+  // Small kana solo
+  'ぁ': 'la', 'ぃ': 'li', 'ぅ': 'lu', 'ぇ': 'le', 'ぉ': 'lo',
+  'ゃ': 'lya', 'ゅ': 'lyu', 'ょ': 'lyo', 'ゎ': 'lwa',
+  'ー': '-',
+};
+
 export function tokenizeHiragana(text: string): string[] {
+  // Normalize half-width kana first
+  const halfNormalized = normalizeHalfWidthKana(text);
+
   // Convert full-width ASCII characters (0xFF01-0xFF5E: ！〜～) to half-width ASCII
-  let normalized = text.replace(/[！-～]/g, match =>
+  let normalized = halfNormalized.replace(/[！-～]/g, match =>
     String.fromCharCode(match.charCodeAt(0) - 0xfee0)
   );
 
@@ -95,7 +191,7 @@ export function tokenizeHiragana(text: string): string[] {
     .replace(/「/g, '[')
     .replace(/」/g, ']');
 
-  // Normalize katakana to hiragana
+  // Normalize katakana to hiragana (including ヴ \u30f4 -> ゔ \u3094)
   const hiragana = normalized.replace(/[\u30a1-\u30f6]/g, match => {
     return String.fromCharCode(match.charCodeAt(0) - 0x60);
   });
@@ -115,6 +211,64 @@ export function tokenizeHiragana(text: string): string[] {
     i++;
   }
   return tokens;
+}
+
+/**
+ * Automatically converts a sub-reading (furigana/kana, alphanumeric, symbols)
+ * into standard typing romaji / alphanumeric keys.
+ */
+export function convertSubToRomaji(subText: string): string {
+  if (!subText) return '';
+
+  const normalized = normalizeHalfWidthKana(subText);
+  const tokens = tokenizeHiragana(normalized);
+  let result = '';
+
+  const getStandardRomajiForToken = (t: string): string => {
+    if (DEFAULT_ROMAJI_MAP[t]) return DEFAULT_ROMAJI_MAP[t];
+    if (KANA_MAP[t] && KANA_MAP[t][0]) return KANA_MAP[t][0];
+    return t.toLowerCase();
+  };
+
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+
+    // Sokuon 'っ'
+    if (token === 'っ') {
+      if (i + 1 < tokens.length) {
+        const nextToken = tokens[i + 1];
+        const nextRomaji = getStandardRomajiForToken(nextToken);
+        // If next token starts with a consonant, repeat that consonant
+        if (nextRomaji && /^[bcdfghjklmnpqrstvwxz]/.test(nextRomaji)) {
+          result += nextRomaji[0];
+          continue;
+        }
+      }
+      result += 'xtsu';
+      continue;
+    }
+
+    // Hatsun 'ん'
+    if (token === 'ん') {
+      if (i + 1 < tokens.length) {
+        const nextToken = tokens[i + 1];
+        const nextRomaji = getStandardRomajiForToken(nextToken);
+        // If next token starts with vowel or 'y' or 'n', must be 'nn'
+        if (nextRomaji && /^[aiueoyn]/.test(nextRomaji)) {
+          result += 'nn';
+          continue;
+        }
+      }
+      // Followed by standard consonant or at end of text
+      result += 'n';
+      continue;
+    }
+
+    // Standard Kana or symbol
+    result += getStandardRomajiForToken(token);
+  }
+
+  return result;
 }
 
 export class KanaRomajiEngine {
