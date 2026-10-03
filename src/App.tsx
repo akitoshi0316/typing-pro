@@ -9,7 +9,7 @@ import { CustomModal, PauseModal, RankingModal, ResultModal } from './components
 import { FullScreenRankingPage } from './components/FullScreenRankingPage';
 import { submitScore, prunePastRankingsForCurrentUser } from './services/rankingService';
 import { getRankInfo } from './utils/rankUtils';
-import { isDisallowedGameKey } from './utils/keyboardUtils';
+import { isDisallowedGameKey, enableKeyboardLock, disableKeyboardLock } from './utils/keyboardUtils';
 import appIcon from './assets/images/app_icon_1789649913266.jpg';
 
 export default function App() {
@@ -454,6 +454,9 @@ export default function App() {
 
     wordQueueRef.current = [...dataset].sort(() => Math.random() - 0.5);
 
+    // Lock system keys (Windows key, Alt+Tab, etc.) during active typing practice
+    enableKeyboardLock();
+
     nextWord();
     startTimer();
   }, [category, getDataset, nextWord, startTimer, timeLimit]);
@@ -617,6 +620,94 @@ export default function App() {
     iconLink.href = '/favicon.png';
   }, []);
 
+  // Fullscreen support & Keyboard Lock
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [rightClickBlockedNotice, setRightClickBlockedNotice] = useState<boolean>(false);
+  const rightClickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        setIsFullscreen(true);
+        await enableKeyboardLock();
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+        disableKeyboardLock();
+      }
+    } catch (err) {
+      console.warn('Fullscreen request failed:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      const isFs = !!document.fullscreenElement;
+      setIsFullscreen(isFs);
+      if (isFs) {
+        enableKeyboardLock();
+      } else {
+        disableKeyboardLock();
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
+  // Right-click restriction across the entire application
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      (e as any).stopImmediatePropagation?.();
+
+      setRightClickBlockedNotice(true);
+      if (rightClickTimeoutRef.current) clearTimeout(rightClickTimeoutRef.current);
+      rightClickTimeoutRef.current = setTimeout(() => {
+        setRightClickBlockedNotice(false);
+      }, 1600);
+      return false;
+    };
+
+    const handlePointerDown = (e: MouseEvent) => {
+      // button 2 is right click
+      if (e.button === 2) {
+        e.preventDefault();
+        e.stopPropagation();
+        (e as any).stopImmediatePropagation?.();
+      }
+    };
+
+    window.addEventListener('contextmenu', handleContextMenu, { capture: true });
+    document.addEventListener('contextmenu', handleContextMenu, { capture: true });
+    document.body.addEventListener('contextmenu', handleContextMenu, { capture: true });
+    window.addEventListener('mousedown', handlePointerDown, { capture: true });
+    window.addEventListener('pointerdown', handlePointerDown, { capture: true });
+    window.addEventListener('auxclick', handlePointerDown, { capture: true });
+
+    return () => {
+      window.removeEventListener('contextmenu', handleContextMenu, { capture: true });
+      document.removeEventListener('contextmenu', handleContextMenu, { capture: true });
+      document.body.removeEventListener('contextmenu', handleContextMenu, { capture: true });
+      window.removeEventListener('mousedown', handlePointerDown, { capture: true });
+      window.removeEventListener('pointerdown', handlePointerDown, { capture: true });
+      window.removeEventListener('auxclick', handlePointerDown, { capture: true });
+      if (rightClickTimeoutRef.current) clearTimeout(rightClickTimeoutRef.current);
+    };
+  }, []);
+
+  // Auto-pause if window focus is lost (e.g. OS-level Windows key or Alt-Tab)
+  useEffect(() => {
+    const handleWindowBlur = () => {
+      if (isPlayingRef.current && !isPausedRef.current) {
+        togglePause();
+      }
+    };
+    window.addEventListener('blur', handleWindowBlur);
+    return () => window.removeEventListener('blur', handleWindowBlur);
+  }, [togglePause]);
+
   // Global Keydown Handler with Misoperation Protection
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -644,6 +735,22 @@ export default function App() {
       if (isDisallowedGameKey(e)) {
         e.preventDefault();
         e.stopPropagation();
+        (e as any).stopImmediatePropagation?.();
+        // If Windows/Meta key was pressed, keep focus in browser window
+        const k = e.key;
+        if (
+          k === 'Meta' ||
+          k === 'Win' ||
+          k === 'Windows' ||
+          e.code?.includes('Meta') ||
+          e.keyCode === 91 ||
+          e.keyCode === 92
+        ) {
+          setTimeout(() => {
+            window.focus();
+            document.body?.focus?.();
+          }, 0);
+        }
         return;
       }
 
@@ -740,6 +847,21 @@ export default function App() {
       if (isDisallowedGameKey(e)) {
         e.preventDefault();
         e.stopPropagation();
+        (e as any).stopImmediatePropagation?.();
+        const k = e.key;
+        if (
+          k === 'Meta' ||
+          k === 'Win' ||
+          k === 'Windows' ||
+          e.code?.includes('Meta') ||
+          e.keyCode === 91 ||
+          e.keyCode === 92
+        ) {
+          setTimeout(() => {
+            window.focus();
+            document.body?.focus?.();
+          }, 0);
+        }
       }
     };
 
@@ -915,6 +1037,29 @@ export default function App() {
                   <span className="hidden sm:inline">ダーク</span>
                 </>
               )}
+            </button>
+
+            {/* Fullscreen Focus Mode Button (Locks Windows Key & OS shortcuts) */}
+            <button
+              id="btnToggleFullscreen"
+              onClick={toggleFullscreen}
+              className={`px-3 py-2 rounded-xl border text-xs sm:text-sm font-medium transition flex items-center space-x-1.5 cursor-pointer ${
+                isFullscreen
+                  ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold shadow-md shadow-emerald-500/20'
+                  : isLight
+                  ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 shadow-xs hover:border-emerald-400'
+                  : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200 shadow-sm hover:border-emerald-500/50'
+              }`}
+              title={isFullscreen ? '全画面を解除' : '全画面集中モード（Windowsキーを完全ブロック）'}
+            >
+              <i
+                className={
+                  isFullscreen
+                    ? 'fa-solid fa-compress text-slate-950'
+                    : 'fa-solid fa-expand text-emerald-500'
+                }
+              ></i>
+              <span className="hidden lg:inline">{isFullscreen ? '全画面解除' : '全画面集中'}</span>
             </button>
 
             {/* Today's Ranking Button (Navigates to /ランキング Full Screen) */}
@@ -1444,17 +1589,28 @@ export default function App() {
               ? 'bg-white/80 text-slate-600 border-slate-200/90 shadow-xs'
               : 'bg-slate-900/60 text-slate-400 border-slate-800'
           }`}
-          title="Windowsキー、Controlキー、Altキー、CapsLock、Tab、F1〜F12などの誤操作防止機能が常時有効です"
+          title="Windowsキー、Controlキー、Altキー、CapsLock、Tab、F1〜F12、右クリックの誤操作防止機能が常時有効です"
         >
           <span className="flex h-2 w-2 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
           <span className="font-medium">
-            誤操作防止中: <span className="font-semibold text-emerald-600 dark:text-emerald-400">Windows / Ctrl / Alt / CapsLock / Tab / F1〜F12</span> キー無効化
+            誤操作防止中: <span className="font-semibold text-emerald-600 dark:text-emerald-400">Windows / Ctrl / Alt / CapsLock / Tab / F1〜F12 / 右クリック</span> 無効化
           </span>
         </div>
       </main>
+
+      {/* Right Click Blocked Notice Toast */}
+      {rightClickBlockedNotice && (
+        <div
+          id="rightClickBlockedToast"
+          className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-slate-950/95 text-amber-300 border border-amber-500/50 shadow-2xl flex items-center space-x-2 text-xs sm:text-sm font-bold backdrop-blur-md animate-bounce"
+        >
+          <i className="fa-solid fa-ban text-amber-400"></i>
+          <span>右クリックは制限されています（タイピングの誤操作防止）</span>
+        </div>
+      )}
 
       {/* Footer */}
       <footer
