@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, signInAnonymously } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import config from '../firebase-applet-config.json';
 
 const firebaseConfig = {
@@ -15,10 +15,22 @@ const firebaseConfig = {
 
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db =
+
+// Initialize Firestore with auto-detect long polling to ensure reliable connectivity inside preview iframes
+const firestoreDbId =
   config.firestoreDatabaseId && config.firestoreDatabaseId !== '(default)'
-    ? getFirestore(app, config.firestoreDatabaseId)
-    : getFirestore(app);
+    ? config.firestoreDatabaseId
+    : undefined;
+
+initializeFirestore(
+  app,
+  {
+    experimentalAutoDetectLongPolling: true,
+  },
+  firestoreDbId
+);
+
+export const db = getFirestore(app, config.firestoreDatabaseId); /* CRITICAL: The app will break without this line */
 
 // Ensure user has valid anonymous auth UID or persistent client ID
 export function getOrCreateClientId(): string {

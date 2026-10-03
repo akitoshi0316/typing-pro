@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { ResultStats, WordItem } from '../types';
 import { validateNickname, getRankPoints, getRankInfo } from '../utils/ngWords';
 
@@ -106,6 +106,40 @@ export const ResultModal: React.FC<ResultModalProps> = ({
   nicknameRef.current = nickname;
   const isSubmittingRef = useRef(isSubmitting);
   isSubmittingRef.current = isSubmitting;
+
+  // Real-time today's rankings for calculating user's current ranking position
+  const [todayRankings, setTodayRankings] = useState<RankingEntry[]>([]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const unsub = subscribeTodayRankings(
+      (data) => {
+        setTodayRankings(data);
+      },
+      (err) => {
+        console.error('Error listening to today rankings in ResultModal:', err);
+      }
+    );
+    return () => unsub();
+  }, [isOpen]);
+
+  // Determine current position among today's rankings
+  const currentRank = useMemo(() => {
+    if (!stats) return 1;
+    let higherCount = 0;
+    for (const r of todayRankings) {
+      if (r.score > stats.score) {
+        higherCount++;
+      } else if (r.score === stats.score) {
+        if (r.cpm > stats.cpm) {
+          higherCount++;
+        } else if (r.cpm === stats.cpm && r.accuracy > stats.accuracyNum) {
+          higherCount++;
+        }
+      }
+    }
+    return higherCount + 1;
+  }, [stats, todayRankings]);
 
   const handleAction = useCallback(async (action: 'retry' | 'close' | 'ranking') => {
     if (isSubmittingRef.current) return;
@@ -293,6 +327,46 @@ export const ResultModal: React.FC<ResultModalProps> = ({
               {stats.totalMissedKeys}
             </div>
           </div>
+        </div>
+
+        {/* Current Rank Banner: "あなたは現在〇位です" */}
+        <div
+          id="currentRankBanner"
+          className={`py-3 px-4 rounded-2xl mb-5 border transition-all ${
+            currentRank === 1
+              ? isLight
+                ? 'bg-gradient-to-r from-amber-100/90 via-yellow-50 to-amber-100/90 border-amber-300 shadow-md shadow-amber-500/10'
+                : 'bg-gradient-to-r from-amber-950/50 via-yellow-950/30 to-amber-950/50 border-amber-500/60 shadow-lg shadow-amber-500/15'
+              : currentRank === 2
+              ? isLight
+                ? 'bg-slate-100 border-slate-300 shadow-sm'
+                : 'bg-slate-800/80 border-slate-700 shadow-sm'
+              : currentRank === 3
+              ? isLight
+                ? 'bg-amber-50/80 border-amber-200 shadow-sm'
+                : 'bg-amber-950/30 border-amber-700/50'
+              : isLight
+              ? 'bg-slate-50 border-slate-200'
+              : 'bg-slate-950/50 border-slate-800'
+          }`}
+        >
+          <div className="flex items-center justify-center space-x-2">
+            <span className="text-xl sm:text-2xl">
+              {currentRank === 1 ? '👑' : currentRank === 2 ? '🥈' : currentRank === 3 ? '🥉' : '🏆'}
+            </span>
+            <span className={`text-base sm:text-lg font-bold ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+              あなたは現在{' '}
+              <span className="text-amber-500 font-black font-mono-code text-2xl sm:text-3xl px-1">
+                {currentRank}
+              </span>
+              {' '}位です
+            </span>
+          </div>
+          <p className={`text-[11px] mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+            {todayRankings.length > 0
+              ? `本日の全${todayRankings.length}件中`
+              : '本日最初のランキング記録になります！'}
+          </p>
         </div>
 
         {/* Nickname Input Field */}

@@ -679,11 +679,27 @@ export default function App() {
         }
       }
 
-      // Convert full-width digits (０〜９) to half-width digits (0~9)
-      if (char.length === 1 && char.charCodeAt(0) >= 0xff10 && char.charCodeAt(0) <= 0xff19) {
+      // Convert full-width ASCII characters (0xFF01-0xFF5E: ！〜～ including symbols, digits, alphabet) to half-width
+      if (char.length === 1 && char.charCodeAt(0) >= 0xff01 && char.charCodeAt(0) <= 0xff5e) {
         char = String.fromCharCode(char.charCodeAt(0) - 0xfee0);
+      } else if (char === '〜') {
+        char = '~';
+      } else if (char === '￥') {
+        char = '\\';
+      } else if (char === '「') {
+        char = '[';
+      } else if (char === '」') {
+        char = ']';
+      } else if (char === '・') {
+        char = '/';
+      } else if (char === '、') {
+        char = ',';
+      } else if (char === '。') {
+        char = '.';
       } else if (char === 'ー' || char === '−') {
         char = '-';
+      } else if (char === '　') {
+        char = ' ';
       }
 
       // Ignore special modifier keys like Shift, Control, Alt, Meta
