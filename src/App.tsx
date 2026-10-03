@@ -9,7 +9,13 @@ import { CustomModal, PauseModal, RankingModal, ResultModal } from './components
 import { FullScreenRankingPage } from './components/FullScreenRankingPage';
 import { submitScore, prunePastRankingsForCurrentUser } from './services/rankingService';
 import { getRankInfo } from './utils/rankUtils';
-import { isDisallowedGameKey, enableKeyboardLock, disableKeyboardLock } from './utils/keyboardUtils';
+import {
+  isDisallowedGameKey,
+  enableKeyboardLock,
+  disableKeyboardLock,
+  lockMousePointer,
+  unlockMousePointer,
+} from './utils/keyboardUtils';
 import appIcon from './assets/images/app_icon_1789649913266.jpg';
 
 export default function App() {
@@ -386,6 +392,12 @@ export default function App() {
       category: categoryRef.current,
     };
 
+    // Unlock mouse pointer so user can freely operate the Result Modal
+    unlockMousePointer();
+    if (!document.fullscreenElement) {
+      disableKeyboardLock();
+    }
+
     setLastResultStats(stats);
     setResultModalOpen(true);
     setTargetKey('');
@@ -454,8 +466,9 @@ export default function App() {
 
     wordQueueRef.current = [...dataset].sort(() => Math.random() - 0.5);
 
-    // Lock system keys (Windows key, Alt+Tab, etc.) during active typing practice
+    // Lock system keys (Windows key, Alt+Tab, etc.) and mouse pointer during typing practice
     enableKeyboardLock();
+    lockMousePointer();
 
     nextWord();
     startTimer();
@@ -469,9 +482,11 @@ export default function App() {
       clearGameTimer();
       setIsPaused(true);
       setPauseModalOpen(true);
+      unlockMousePointer();
     } else {
       setIsPaused(false);
       setPauseModalOpen(false);
+      lockMousePointer();
       startTimer();
     }
   }, [startTimer]);
@@ -481,6 +496,10 @@ export default function App() {
     setIsPlaying(false);
     setIsPaused(false);
     setPauseModalOpen(false);
+    unlockMousePointer();
+    if (!document.fullscreenElement) {
+      disableKeyboardLock();
+    }
 
     setCurrentWord({
       main: 'スタートを押して練習を開始',
@@ -772,6 +791,7 @@ export default function App() {
         }
         e.preventDefault();
         startGame();
+        lockMousePointer();
         return;
       }
 
@@ -903,6 +923,8 @@ export default function App() {
     <div
       id="appRoot"
       className={`relative min-h-screen flex flex-col justify-between overflow-x-hidden transition-colors duration-200 ${
+        isPlaying && !isPaused ? 'cursor-none select-none' : ''
+      } ${
         isLight
           ? 'selection:bg-cyan-500 selection:text-white'
           : 'selection:bg-cyan-500 selection:text-black'
@@ -1589,14 +1611,14 @@ export default function App() {
               ? 'bg-white/80 text-slate-600 border-slate-200/90 shadow-xs'
               : 'bg-slate-900/60 text-slate-400 border-slate-800'
           }`}
-          title="Windowsキー、Controlキー、Altキー、CapsLock、Tab、F1〜F12、右クリックの誤操作防止機能が常時有効です"
+          title="Windowsキー、Controlキー、Altキー、CapsLock、Tab、F1〜F12、右クリック、マウスポインタロック（プレイ中）の誤操作防止機能が常時有効です"
         >
           <span className="flex h-2 w-2 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
           <span className="font-medium">
-            誤操作防止中: <span className="font-semibold text-emerald-600 dark:text-emerald-400">Windows / Ctrl / Alt / CapsLock / Tab / F1〜F12 / 右クリック</span> 無効化
+            誤操作防止中: <span className="font-semibold text-emerald-600 dark:text-emerald-400">Windows / Ctrl / Alt / CapsLock / Tab / F1〜F12 / 右クリック / マウスポインタ固定</span> 無効化
           </span>
         </div>
       </main>

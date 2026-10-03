@@ -144,3 +144,39 @@ export function disableKeyboardLock(): void {
     // ignore
   }
 }
+
+/**
+ * Locks the mouse pointer using the Pointer Lock API.
+ * This locks the mouse cursor to prevent accidental cursor movement or clicks during typing.
+ */
+export async function lockMousePointer(): Promise<boolean> {
+  try {
+    const target = document.body || document.documentElement;
+    if (target && typeof target.requestPointerLock === 'function') {
+      const res = target.requestPointerLock() as any;
+      if (res && typeof res.catch === 'function') {
+        res.catch(() => {
+          // pointer lock denied or not supported
+        });
+      }
+      return true;
+    }
+  } catch {
+    // ignore
+  }
+  return false;
+}
+
+/**
+ * Releases the mouse pointer lock.
+ */
+export function unlockMousePointer(): void {
+  try {
+    if (document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+  } catch {
+    // ignore
+  }
+}
+
