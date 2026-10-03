@@ -368,29 +368,45 @@ export default function App() {
     );
 
     let rank = 'D';
+    let rankPoints = 60;
     let rankTitle = '初級タイピスト 🌱';
     let rankColor = 'from-slate-600 to-slate-800';
 
     if (cpm >= 320 && accuracyNum >= 97) {
       rank = 'SSS';
+      rankPoints = 250;
       rankTitle = '伝説の神速タイピスト 👑';
       rankColor = 'from-amber-400 via-rose-500 to-purple-600';
     } else if (cpm >= 260 && accuracyNum >= 95) {
       rank = 'SS';
+      rankPoints = 225;
       rankTitle = '超人タイピスト 🔥';
       rankColor = 'from-cyan-400 to-indigo-600';
     } else if (cpm >= 200 && accuracyNum >= 90) {
       rank = 'S';
+      rankPoints = 200;
       rankTitle = 'マスタータイピスト ⚡';
       rankColor = 'from-emerald-400 to-cyan-600';
     } else if (cpm >= 150) {
       rank = 'A';
+      rankPoints = 160;
       rankTitle = '上級タイピスト ✨';
       rankColor = 'from-blue-500 to-indigo-600';
-    } else if (cpm >= 90) {
+    } else if (cpm >= 100) {
       rank = 'B';
+      rankPoints = 120;
       rankTitle = '中級タイピスト 👍';
       rankColor = 'from-slate-500 to-blue-600';
+    } else if (cpm >= 60) {
+      rank = 'C';
+      rankPoints = 80;
+      rankTitle = '初中級タイピスト 🌸';
+      rankColor = 'from-teal-600 to-emerald-700';
+    } else {
+      rank = 'D';
+      rankPoints = 60;
+      rankTitle = '初級タイピスト 🌱';
+      rankColor = 'from-slate-600 to-slate-800';
     }
 
     const stats: ResultStats = {
@@ -402,6 +418,7 @@ export default function App() {
       totalCorrectKeys: totalCorrectRef.current,
       totalMissedKeys: totalMissedRef.current,
       rank,
+      rankPoints,
       rankTitle,
       rankColor,
       category: categoryRef.current,

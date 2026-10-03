@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ResultStats, WordItem } from '../types';
-import { validateNickname } from '../utils/ngWords';
+import { validateNickname, getRankPoints } from '../utils/ngWords';
 
 interface PauseModalProps {
   isOpen: boolean;
@@ -201,10 +201,26 @@ export const ResultModal: React.FC<ResultModalProps> = ({
       >
         <div
           id="rankBadge"
-          className={`inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-tr ${stats.rankColor} text-white font-extrabold text-3xl shadow-xl mb-3`}
+          className={`inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-tr ${stats.rankColor} text-white font-extrabold text-3xl shadow-xl mb-2`}
         >
           {stats.rank}
         </div>
+
+        {/* Rank Points Display */}
+        <div className="mb-2.5 flex items-center justify-center">
+          <div
+            id="rankPointsBadge"
+            className={`inline-flex items-center space-x-1.5 px-4 py-1 rounded-full text-base sm:text-lg font-black font-mono-code border shadow-sm ${
+              isLight
+                ? 'bg-amber-50 border-amber-300 text-amber-600'
+                : 'bg-amber-500/15 border-amber-500/40 text-amber-400'
+            }`}
+          >
+            <i className="fa-solid fa-award text-sm text-amber-500"></i>
+            <span>{stats.rankPoints ?? getRankPoints(stats.rank)}点</span>
+          </div>
+        </div>
+
         <h2 id="rankTitle" className={`text-xl font-bold ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
           {stats.rankTitle}
         </h2>

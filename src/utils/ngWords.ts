@@ -92,3 +92,33 @@ export function validateNickname(
 
   return { valid: true };
 }
+
+/**
+ * Returns point value corresponding to the letter rank:
+ * SSS -> 250
+ * SS  -> 225
+ * S   -> 200
+ * A   -> 160
+ * B   -> 120
+ * C   -> 80
+ * D   -> 60
+ */
+export function getRankPoints(rank: string): number {
+  switch (rank?.toUpperCase()) {
+    case 'SSS':
+      return 250;
+    case 'SS':
+      return 225;
+    case 'S':
+      return 200;
+    case 'A':
+      return 160;
+    case 'B':
+      return 120;
+    case 'C':
+      return 80;
+    case 'D':
+    default:
+      return 60;
+  }
+}

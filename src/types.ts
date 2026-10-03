@@ -23,6 +23,7 @@ export interface ResultStats {
   totalCorrectKeys: number;
   totalMissedKeys: number;
   rank: string;
+  rankPoints: number;
   rankTitle: string;
   rankColor: string;
   category: CategoryKey;
