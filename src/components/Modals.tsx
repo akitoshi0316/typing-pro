@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ResultStats, WordItem } from '../types';
 import { validateNickname } from '../utils/ngWords';
 
@@ -100,31 +100,32 @@ export const ResultModal: React.FC<ResultModalProps> = ({
   const [nickname, setNickname] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      // Clear input and error on each opening
-      setNickname('');
-      setErrorMsg('');
-    }
-  }, [isOpen]);
+  const nicknameRef = useRef(nickname);
+  nicknameRef.current = nickname;
+  const isSubmittingRef = useRef(isSubmitting);
+  isSubmittingRef.current = isSubmitting;
 
-  if (!isOpen || !stats) return null;
+  const handleAction = useCallback(async (action: 'retry' | 'close' | 'ranking') => {
+    if (isSubmittingRef.current) return;
+    const trimmed = nicknameRef.current.trim();
+    // If no input, default to '入力なし'
+    const finalNickname = trimmed === '' ? '入力なし' : trimmed;
 
-  const isLight = theme === 'light';
-
-  const handleAction = async (action: 'retry' | 'close' | 'ranking') => {
-    const trimmed = nickname.trim();
-    const val = validateNickname(trimmed);
-    if (!val.valid) {
-      setErrorMsg(val.error || 'ニックネームを入力してください（入力しないと終了できません）');
-      return;
+    // If nickname is provided, validate against NG words and rules
+    if (trimmed !== '') {
+      const val = validateNickname(trimmed);
+      if (!val.valid) {
+        setErrorMsg(val.error || 'ニックネームが無効です。');
+        return;
+      }
     }
 
     try {
       setIsSubmitting(true);
       setErrorMsg('');
-      await onFinishWithNickname(trimmed, action);
+      await onFinishWithNickname(finalNickname, action);
     } catch (err: unknown) {
       console.error(err);
       const msg = err instanceof Error ? err.message : 'スコアの保存中にエラーが発生しました。もう一度お試しください。';
@@ -132,7 +133,60 @@ export const ResultModal: React.FC<ResultModalProps> = ({
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [onFinishWithNickname]);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Clear input and error on each opening
+      setNickname('');
+      setErrorMsg('');
+
+      // Auto-focus the nickname input immediately so user can type without using the mouse
+      const focusField = () => {
+        if (inputRef.current) {
+          inputRef.current.focus({ preventScroll: true });
+        }
+      };
+
+      focusField();
+      const t1 = setTimeout(focusField, 30);
+      const t2 = setTimeout(focusField, 100);
+      const t3 = setTimeout(focusField, 250);
+
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      };
+    }
+  }, [isOpen]);
+
+  // Global keydown listener for ResultModal: Enter key finishes immediately
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Avoid submitting during IME composition (converting Japanese text)
+      if (e.isComposing || e.keyCode === 229) {
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleAction('close');
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        handleAction('close');
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [isOpen, handleAction]);
+
+  if (!isOpen || !stats) return null;
+
+  const isLight = theme === 'light';
 
   return (
     <div
@@ -225,7 +279,7 @@ export const ResultModal: React.FC<ResultModalProps> = ({
           </div>
         </div>
 
-        {/* Mandatory Nickname Input Field */}
+        {/* Nickname Input Field */}
         <div className={`p-4 rounded-2xl border mb-5 text-left transition-colors ${
           errorMsg
             ? isLight
@@ -240,25 +294,32 @@ export const ResultModal: React.FC<ResultModalProps> = ({
               <i className="fa-solid fa-trophy mr-1.5 text-amber-500"></i>
               ニックネーム（今日のランキングに登録）
             </span>
-            <span className="text-[11px] font-semibold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">
-              必須
+            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
+              isLight ? 'bg-slate-200/80 text-slate-600' : 'bg-slate-850 text-slate-400 border border-slate-700/60'
+            }`}>
+              未入力時は「入力なし」
             </span>
           </label>
           <input
+            ref={inputRef}
             id="resultNicknameInput"
             type="text"
+            autoFocus
             value={nickname}
             onChange={(e) => {
               setNickname(e.target.value);
               if (errorMsg) setErrorMsg('');
             }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+                e.preventDefault();
+                handleAction('close');
+              } else if (e.key === 'Escape') {
                 e.preventDefault();
                 handleAction('close');
               }
             }}
-            placeholder="ランキングに表示する名前を入力..."
+            placeholder="ニックネームを入力（空欄のままでも終了可能）..."
             maxLength={20}
             className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold outline-none transition ${
               isLight
@@ -273,12 +334,12 @@ export const ResultModal: React.FC<ResultModalProps> = ({
             </p>
           ) : (
             <p className={`text-[11px] mt-1.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-              ※ニックネームを入力するとスコアが「今日のランキング」に即座に反映されます。
+              ※Enterキーを押すとそのまま終了できます（空欄の場合は「入力なし」として記録されます）。
             </p>
           )}
         </div>
 
-        {/* Action Buttons: Mandatory registration to exit or retry */}
+        {/* Action Buttons: Retry or Close */}
         <div className="flex flex-col sm:flex-row space-y-2.5 sm:space-y-0 sm:space-x-3">
           <button
             id="btnPlayAgain"
@@ -296,7 +357,7 @@ export const ResultModal: React.FC<ResultModalProps> = ({
             ) : (
               <>
                 <i className="fa-solid fa-rotate-right"></i>
-                <span>登録してもう一度挑む</span>
+                <span>もう一度挑む</span>
               </>
             )}
           </button>
@@ -305,14 +366,19 @@ export const ResultModal: React.FC<ResultModalProps> = ({
             id="btnCloseResult"
             disabled={isSubmitting}
             onClick={() => handleAction('close')}
-            className={`px-6 py-3.5 rounded-2xl font-bold transition border cursor-pointer flex items-center justify-center space-x-1.5 ${
+            className={`px-6 py-3.5 rounded-2xl font-bold transition border cursor-pointer flex items-center justify-center space-x-2 ${
               isLight
                 ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
                 : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
             } ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
           >
             <i className="fa-solid fa-check"></i>
-            <span>登録して終了</span>
+            <span>終了する</span>
+            <kbd className={`text-[10px] font-mono px-2 py-0.5 rounded-md border font-semibold ${
+              isLight ? 'bg-white border-slate-300 text-slate-700 shadow-xs' : 'bg-slate-900 border-slate-700 text-slate-300'
+            }`}>
+              Enter ↵
+            </kbd>
           </button>
         </div>
       </div>
@@ -538,9 +604,13 @@ export const RankingModal: React.FC<RankingModalProps> = ({
                     <div className="min-w-0">
                       <div className="flex items-center space-x-2">
                         <span className={`font-bold text-sm sm:text-base truncate ${
-                          isLight ? 'text-slate-900' : 'text-slate-100'
+                          item.nickname === '入力なし'
+                            ? 'text-slate-400 italic font-medium'
+                            : isLight
+                            ? 'text-slate-900'
+                            : 'text-slate-100'
                         }`}>
-                          {item.nickname}
+                          {item.nickname || '入力なし'}
                         </span>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${
                           isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-800 text-slate-400'

@@ -240,6 +240,14 @@ export default function App() {
   categoryRef.current = category;
   const missLimitRef = useRef(missLimit);
   missLimitRef.current = missLimit;
+  const resultModalOpenRef = useRef(resultModalOpen);
+  resultModalOpenRef.current = resultModalOpen;
+  const rankingModalOpenRef = useRef(rankingModalOpen);
+  rankingModalOpenRef.current = rankingModalOpen;
+  const customModalOpenRef = useRef(customModalOpen);
+  customModalOpenRef.current = customModalOpen;
+  const pauseModalOpenRef = useRef(pauseModalOpen);
+  pauseModalOpenRef.current = pauseModalOpen;
 
   // Toggle sound
   const handleToggleSound = () => {
@@ -514,10 +522,11 @@ export default function App() {
   // Handle score submission with nickname from ResultModal
   const handleFinishWithNickname = useCallback(
     async (nickname: string, action: 'retry' | 'close' | 'ranking') => {
+      const finalNickname = (nickname || '').trim() === '' ? '入力なし' : (nickname || '').trim();
       if (lastResultStats) {
         try {
           await submitScore({
-            nickname,
+            nickname: finalNickname,
             cpm: lastResultStats.cpm,
             accuracy: lastResultStats.accuracyNum,
             maxCombo: lastResultStats.maxCombo,
@@ -645,6 +654,15 @@ export default function App() {
 
       // Start game with Space when not playing
       if (!isPlayingRef.current && e.code === 'Space') {
+        // Prevent starting if any modal is currently open
+        if (
+          resultModalOpenRef.current ||
+          rankingModalOpenRef.current ||
+          customModalOpenRef.current ||
+          pauseModalOpenRef.current
+        ) {
+          return;
+        }
         // Prevent starting if focus is inside an input modal
         const target = e.target as HTMLElement;
         if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {

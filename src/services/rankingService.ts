@@ -48,8 +48,9 @@ export async function submitScore(data: {
   score: number;
   category: string;
 }): Promise<string> {
-  const cleanNickname = data.nickname.trim().slice(0, 30);
-  const val = validateNickname(cleanNickname);
+  const raw = (data.nickname || '').trim();
+  const cleanNickname = (raw === '' ? '入力なし' : raw).slice(0, 30);
+  const val = validateNickname(cleanNickname, { allowEmpty: true });
   if (!val.valid) {
     throw new Error(val.error || 'ニックネームが無効です。');
   }

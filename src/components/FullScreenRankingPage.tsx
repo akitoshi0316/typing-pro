@@ -459,8 +459,14 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
 
                         {/* Nickname */}
                         <td className="py-4 px-4 sm:px-6">
-                          <span className="font-bold text-sm sm:text-base">
-                            {entry.nickname}
+                          <span className={`font-bold text-sm sm:text-base ${
+                            entry.nickname === '入力なし'
+                              ? 'text-slate-400 italic font-medium'
+                              : isLight
+                              ? 'text-slate-900'
+                              : 'text-slate-100'
+                          }`}>
+                            {entry.nickname || '入力なし'}
                           </span>
                         </td>
 
@@ -705,8 +711,14 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center space-x-1.5">
-                          <span className="font-bold text-xs sm:text-sm truncate">
-                            {entry.nickname}
+                          <span className={`font-bold text-xs sm:text-sm truncate ${
+                            entry.nickname === '入力なし'
+                              ? 'text-slate-400 italic font-medium'
+                              : isLight
+                              ? 'text-slate-900'
+                              : 'text-slate-100'
+                          }`}>
+                            {entry.nickname || '入力なし'}
                           </span>
                           <span className="text-[10px] px-1.5 py-0.2 rounded font-medium border border-slate-400/20 text-slate-400 shrink-0">
                             {entry.category === 'japanese'

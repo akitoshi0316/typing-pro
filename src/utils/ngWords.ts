@@ -60,10 +60,16 @@ export function normalizeText(raw: string): string {
  * Validates a nickname against prohibited words and general requirements.
  * Returns an error message string if invalid, or null if valid.
  */
-export function validateNickname(nickname: string): { valid: boolean; error?: string } {
-  const trimmed = nickname.trim();
+export function validateNickname(
+  nickname: string,
+  options?: { allowEmpty?: boolean }
+): { valid: boolean; error?: string } {
+  const trimmed = (nickname || '').trim();
 
   if (!trimmed) {
+    if (options?.allowEmpty) {
+      return { valid: true };
+    }
     return { valid: false, error: 'ニックネームを入力してください。' };
   }
 
