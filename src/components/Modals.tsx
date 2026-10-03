@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ResultStats, WordItem } from '../types';
-import { validateNickname, getRankPoints } from '../utils/ngWords';
+import { validateNickname, getRankPoints, getRankInfo } from '../utils/ngWords';
 
 interface PauseModalProps {
   isOpen: boolean;
@@ -577,6 +577,7 @@ export const RankingModal: React.FC<RankingModalProps> = ({
               const isTop1 = rank === 1;
               const isTop2 = rank === 2;
               const isTop3 = rank === 3;
+              const rankInfo = getRankInfo(item.cpm, item.accuracy);
 
               return (
                 <div
@@ -618,7 +619,7 @@ export const RankingModal: React.FC<RankingModalProps> = ({
                     </div>
 
                     <div className="min-w-0">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 flex-wrap gap-y-1">
                         <span className={`font-bold text-sm sm:text-base truncate ${
                           item.nickname === '入力なし'
                             ? 'text-slate-400 italic font-medium'
@@ -628,15 +629,25 @@ export const RankingModal: React.FC<RankingModalProps> = ({
                         }`}>
                           {item.nickname || '入力なし'}
                         </span>
+                        {/* Alphabet Rank Badge */}
+                        <span className={`px-2 py-0.5 rounded-lg text-xs font-black tracking-wider shrink-0 ${rankInfo.badgeClass}`}>
+                          {rankInfo.rank}
+                        </span>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${
                           isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-800 text-slate-400'
                         }`}>
                           {getCategoryLabel(item.category)}
                         </span>
                       </div>
-                      <span className={`text-[10px] ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                      <div className="flex items-center space-x-2 text-[10px] mt-0.5">
+                        <span className="font-bold text-amber-500 font-mono-code">
+                          {rankInfo.points}点
+                        </span>
+                        <span className={isLight ? 'text-slate-300' : 'text-slate-600'}>•</span>
+                        <span className={`text-[10px] ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
                     </div>
                   </div>
 

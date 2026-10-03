@@ -6,6 +6,7 @@ import {
   getTodayDateKey,
   resetTodayRankings,
 } from '../services/rankingService';
+import { getRankInfo } from '../utils/rankUtils';
 
 interface FullScreenRankingPageProps {
   theme: 'dark' | 'light';
@@ -397,7 +398,8 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
                         : 'bg-slate-950/70 text-slate-400 border-slate-800'
                     }`}
                   >
-                    <th className="py-3.5 px-4 sm:px-6 w-16 text-center">順位</th>
+                    <th className="py-3.5 px-3 sm:px-4 w-16 text-center">順位</th>
+                    <th className="py-3.5 px-3 sm:px-4 w-20 text-center">ランク</th>
                     <th className="py-3.5 px-4 sm:px-6">ニックネーム</th>
                     <th className="py-3.5 px-3 sm:px-4 text-right">スコア</th>
                     <th className="py-3.5 px-3 sm:px-4 text-right">打鍵速度 (CPM)</th>
@@ -418,6 +420,7 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
                     const isTop1 = rankNumber === 1;
                     const isTop2 = rankNumber === 2;
                     const isTop3 = rankNumber === 3;
+                    const rankInfo = getRankInfo(entry.cpm, entry.accuracy);
 
                     const timeStr = (() => {
                       try {
@@ -437,7 +440,7 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
                         className="transition hover:bg-slate-500/5"
                       >
                         {/* Rank */}
-                        <td className="py-4 px-4 sm:px-6 text-center font-black">
+                        <td className="py-4 px-3 sm:px-4 text-center font-black">
                           {isTop1 ? (
                             <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 text-slate-950 text-sm shadow-md shadow-amber-500/30">
                               🥇
@@ -455,6 +458,20 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
                               #{rankNumber}
                             </span>
                           )}
+                        </td>
+
+                        {/* Alphabet Rank */}
+                        <td className="py-4 px-3 sm:px-4 text-center">
+                          <div className="inline-flex flex-col items-center">
+                            <span
+                              className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg text-xs tracking-wider ${rankInfo.badgeClass}`}
+                            >
+                              {rankInfo.rank}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-mono-code font-bold mt-0.5">
+                              {rankInfo.points}点
+                            </span>
+                          </div>
                         </td>
 
                         {/* Nickname */}
@@ -665,6 +682,7 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
                 const isTop1 = rank === 1;
                 const isTop2 = rank === 2;
                 const isTop3 = rank === 3;
+                const rankInfo = getRankInfo(entry.cpm, entry.accuracy);
 
                 return (
                   <div
@@ -710,7 +728,7 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center space-x-1.5">
+                        <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
                           <span className={`font-bold text-xs sm:text-sm truncate ${
                             entry.nickname === '入力なし'
                               ? 'text-slate-400 italic font-medium'
@@ -719,6 +737,9 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
                               : 'text-slate-100'
                           }`}>
                             {entry.nickname || '入力なし'}
+                          </span>
+                          <span className={`px-1.5 py-0.2 rounded text-[10px] tracking-wider shrink-0 ${rankInfo.badgeClass}`}>
+                            {rankInfo.rank}
                           </span>
                           <span className="text-[10px] px-1.5 py-0.2 rounded font-medium border border-slate-400/20 text-slate-400 shrink-0">
                             {entry.category === 'japanese'
@@ -733,6 +754,8 @@ export const FullScreenRankingPage: React.FC<FullScreenRankingPageProps> = ({
                           </span>
                         </div>
                         <div className="flex items-center space-x-2 text-[10px] text-slate-400 mt-0.5">
+                          <span className="font-bold text-amber-500">{rankInfo.points}点</span>
+                          <span>•</span>
                           <span>{entry.cpm} CPM</span>
                           <span>•</span>
                           <span>{entry.accuracy}%</span>
