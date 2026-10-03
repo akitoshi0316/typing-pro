@@ -9,6 +9,7 @@ import { CustomModal, PauseModal, RankingModal, ResultModal } from './components
 import { FullScreenRankingPage } from './components/FullScreenRankingPage';
 import { submitScore, prunePastRankingsForCurrentUser } from './services/rankingService';
 import { getRankInfo } from './utils/rankUtils';
+import { isDisallowedGameKey } from './utils/keyboardUtils';
 import appIcon from './assets/images/app_icon_1789649913266.jpg';
 
 export default function App() {
@@ -616,16 +617,34 @@ export default function App() {
     iconLink.href = '/favicon.png';
   }, []);
 
-  // Global Keydown Handler
+  // Global Keydown Handler with Misoperation Protection
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Toggle pause with Escape
       if (e.key === 'Escape' || e.code === 'Escape') {
         if (isPlayingRef.current) {
           e.preventDefault();
+          e.stopPropagation();
           togglePause();
           return;
         }
+      }
+
+      // Check if user is typing inside an input/textarea in a modal
+      const target = e.target as HTMLElement | null;
+      const isInputFocused =
+        target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+
+      // If typing in an input modal and not in active gameplay, allow standard typing & editing
+      if (isInputFocused && !isPlayingRef.current) {
+        return;
+      }
+
+      // Disable Windows/Meta, Control, Alt, CapsLock, Tab, Fn, F1~F12 keys to prevent accidental misoperations
+      if (isDisallowedGameKey(e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
       }
 
       if (isPausedRef.current) return;
@@ -641,9 +660,7 @@ export default function App() {
         ) {
           return;
         }
-        // Prevent starting if focus is inside an input modal
-        const target = e.target as HTMLElement;
-        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+        if (isInputFocused) {
           return;
         }
         e.preventDefault();
@@ -704,6 +721,8 @@ export default function App() {
 
       // Ignore special modifier keys like Shift, Control, Alt, Meta
       if (char.length > 1 && char !== ' ') {
+        e.preventDefault();
+        e.stopPropagation();
         return;
       }
 
@@ -711,8 +730,25 @@ export default function App() {
       processKey(char);
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    const handleKeyUp = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInputFocused =
+        target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+      if (isInputFocused && !isPlayingRef.current) {
+        return;
+      }
+      if (isDisallowedGameKey(e)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    window.addEventListener('keyup', handleKeyUp, { capture: true });
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
+      window.removeEventListener('keyup', handleKeyUp, { capture: true });
+    };
   }, [processKey, startGame, togglePause]);
 
   // Clean up timer on unmount
@@ -1399,6 +1435,25 @@ export default function App() {
           onKeyClick={(k) => processKey(k)}
           theme={theme}
         />
+
+        {/* Misoperation Protection Indicator */}
+        <div
+          id="misoperationProtectionBadge"
+          className={`flex items-center space-x-2 text-[11px] sm:text-xs px-3.5 py-1.5 rounded-full border transition-colors select-none ${
+            isLight
+              ? 'bg-white/80 text-slate-600 border-slate-200/90 shadow-xs'
+              : 'bg-slate-900/60 text-slate-400 border-slate-800'
+          }`}
+          title="Windowsキー、Controlキー、Altキー、CapsLock、Tab、F1〜F12などの誤操作防止機能が常時有効です"
+        >
+          <span className="flex h-2 w-2 relative">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span className="font-medium">
+            誤操作防止中: <span className="font-semibold text-emerald-600 dark:text-emerald-400">Windows / Ctrl / Alt / CapsLock / Tab / F1〜F12</span> キー無効化
+          </span>
+        </div>
       </main>
 
       {/* Footer */}

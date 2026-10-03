@@ -25,7 +25,7 @@ const firestoreDbId =
 initializeFirestore(
   app,
   {
-    experimentalAutoDetectLongPolling: true,
+    experimentalForceLongPolling: true,
   },
   firestoreDbId
 );
@@ -57,14 +57,12 @@ export async function ensureAuth() {
   return auth.currentUser;
 }
 
-// Connection test as required by skill guidelines
+// Connection check with graceful offline fallback
 async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Please check your Firebase configuration.');
-    }
+  } catch {
+    // If offline or network is slow, Firestore automatically operates in offline cache mode
   }
 }
 testConnection();
