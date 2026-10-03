@@ -947,16 +947,16 @@ export default function App() {
 
       {/* Top Navigation Header */}
       <header
-        className={`relative z-10 border-b backdrop-blur-md px-4 py-3 sm:px-8 transition-colors duration-200 ${
+        className={`relative z-10 border-b backdrop-blur-md px-3 sm:px-6 py-2.5 transition-colors duration-200 w-full ${
           isLight
             ? 'border-slate-200/90 bg-white/80 shadow-xs'
             : 'border-slate-800/80 bg-slate-900/60'
         }`}
       >
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+        <div className="w-full max-w-full mx-auto flex items-center justify-between gap-2 sm:gap-4 flex-nowrap">
+          <div className="flex items-center space-x-2.5 sm:space-x-3 flex-shrink-0 whitespace-nowrap">
             <div
-              className={`w-10 h-10 rounded-xl overflow-hidden shadow-lg border flex items-center justify-center flex-shrink-0 ${
+              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-lg border flex items-center justify-center flex-shrink-0 ${
                 isLight
                   ? 'shadow-slate-300/50 border-cyan-500/40 bg-white'
                   : 'shadow-cyan-500/20 border-cyan-500/30 bg-slate-900'
@@ -969,10 +969,10 @@ export default function App() {
                 referrerPolicy="no-referrer"
               />
             </div>
-            <div>
+            <div className="flex items-center space-x-2 sm:space-x-3 whitespace-nowrap">
               <h1
                 id="appTitle"
-                className={`text-xl font-black tracking-tight ${
+                className={`text-lg sm:text-xl font-black tracking-tight whitespace-nowrap ${
                   isLight
                     ? 'bg-gradient-to-r from-slate-900 via-slate-700 to-cyan-600 bg-clip-text text-transparent'
                     : 'bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent'
@@ -980,13 +980,17 @@ export default function App() {
               >
                 TypeMaster <span className="text-cyan-500 font-light text-sm">PRO</span>
               </h1>
-              <p className={`text-xs hidden sm:block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+              <span
+                className={`text-xs hidden md:inline-block border-l pl-2 sm:pl-3 whitespace-nowrap font-medium ${
+                  isLight ? 'border-slate-300 text-slate-500' : 'border-slate-700 text-slate-400'
+                }`}
+              >
                 タイピング速度 & 精度向上トレーニング
-              </p>
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="flex items-center space-x-1.5 sm:space-x-2 flex-nowrap flex-shrink-0">
             <button
               id="btnOpenCustomModal"
               onClick={() => setCustomModalOpen(true)}
